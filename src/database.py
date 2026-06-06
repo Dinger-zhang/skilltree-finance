@@ -95,6 +95,7 @@ def ensure_answers_table_columns(conn: sqlite3.Connection) -> None:
             "ALTER TABLE answers ADD COLUMN needs_manual_grading INTEGER DEFAULT 0"
         ),
         "grading_status": "ALTER TABLE answers ADD COLUMN grading_status TEXT",
+        "delayed_test": "ALTER TABLE answers ADD COLUMN delayed_test INTEGER DEFAULT 0",
     }
     for column_name, sql in column_sql.items():
         if column_name not in columns:
@@ -126,6 +127,7 @@ def init_db(conn: sqlite3.Connection) -> None:
             max_score REAL,
             needs_manual_grading INTEGER DEFAULT 0,
             grading_status TEXT,
+            delayed_test INTEGER DEFAULT 0,
             created_at TEXT NOT NULL,
             FOREIGN KEY(student_id) REFERENCES students(id)
         );
@@ -229,6 +231,7 @@ def save_answer(
     max_score: Optional[float] = None,
     needs_manual_grading: bool = False,
     grading_status: Optional[str] = None,
+    delayed_test: bool = False,
 ) -> None:
     answer_is_correct = selected_answer == correct_answer if is_correct is None else is_correct
     if max_score is None:
@@ -243,9 +246,10 @@ def save_answer(
         INSERT INTO answers(
             student_id, phase, question_id, selected_answer,
             correct_answer, is_correct, question_type, node_id,
-            score, max_score, needs_manual_grading, grading_status, created_at
+            score, max_score, needs_manual_grading, grading_status,
+            delayed_test, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             student_id,
@@ -260,6 +264,7 @@ def save_answer(
             float(max_score),
             int(needs_manual_grading),
             grading_status,
+            int(delayed_test),
             now_text(),
         ),
     )
@@ -271,6 +276,7 @@ def save_answer_result(
     student_id: int,
     phase: str,
     result: dict[str, Any],
+    delayed_test: bool = False,
 ) -> None:
     save_answer(
         conn,
@@ -285,6 +291,7 @@ def save_answer_result(
         score=float(result.get("score", 0)),
         max_score=float(result.get("max_score", 1)),
         needs_manual_grading=bool(result.get("needs_manual_grading", False)),
+        delayed_test=delayed_test,
     )
 
 
