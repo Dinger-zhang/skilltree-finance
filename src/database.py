@@ -86,6 +86,9 @@ def table_columns(conn: sqlite3.Connection, table_name: str) -> set[str]:
 
 def ensure_answers_table_columns(conn: sqlite3.Connection) -> None:
     columns = table_columns(conn, "answers")
+    if not columns:
+        return
+
     column_sql = {
         "question_type": "ALTER TABLE answers ADD COLUMN question_type TEXT",
         "node_id": "ALTER TABLE answers ADD COLUMN node_id TEXT",
@@ -97,9 +100,14 @@ def ensure_answers_table_columns(conn: sqlite3.Connection) -> None:
         "grading_status": "ALTER TABLE answers ADD COLUMN grading_status TEXT",
         "delayed_test": "ALTER TABLE answers ADD COLUMN delayed_test INTEGER DEFAULT 0",
     }
+    changed = False
     for column_name, sql in column_sql.items():
         if column_name not in columns:
             conn.execute(sql)
+            changed = True
+
+    if changed:
+        conn.commit()
 
 
 def init_db(conn: sqlite3.Connection) -> None:
@@ -217,6 +225,17 @@ def get_student(conn: sqlite3.Connection, student_id: int) -> Optional[sqlite3.R
     return conn.execute("SELECT * FROM students WHERE id = ?", (student_id,)).fetchone()
 
 
+def get_students(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    rows = conn.execute(
+        """
+        SELECT id, name, student_code, class_name, created_at
+        FROM students
+        ORDER BY id DESC
+        """
+    ).fetchall()
+    return list(rows)
+
+
 def save_answer(
     conn: sqlite3.Connection,
     student_id: int,
@@ -233,6 +252,8 @@ def save_answer(
     grading_status: Optional[str] = None,
     delayed_test: bool = False,
 ) -> None:
+    ensure_answers_table_columns(conn)
+
     answer_is_correct = selected_answer == correct_answer if is_correct is None else is_correct
     if max_score is None:
         max_score = 1.0
@@ -313,6 +334,23 @@ def get_latest_answers(
         ORDER BY a.question_id
         """,
         (student_id, phase),
+    ).fetchall()
+    return list(rows)
+
+
+def get_all_answers(conn: sqlite3.Connection, student_id: int) -> list[sqlite3.Row]:
+    ensure_answers_table_columns(conn)
+
+    rows = conn.execute(
+        """
+        SELECT id, phase, question_id, selected_answer, correct_answer,
+               is_correct, question_type, node_id, score, max_score,
+               needs_manual_grading, grading_status, delayed_test, created_at
+        FROM answers
+        WHERE student_id = ?
+        ORDER BY id
+        """,
+        (student_id,),
     ).fetchall()
     return list(rows)
 
@@ -447,5 +485,23 @@ def get_node_learning_records(
         LIMIT ?
         """,
         (student_id, node_id, limit),
+    ).fetchall()
+    return list(rows)
+
+
+def get_all_node_learning_records(
+    conn: sqlite3.Connection,
+    student_id: int,
+) -> list[sqlite3.Row]:
+    rows = conn.execute(
+        """
+        SELECT node_id, item_id, item_type, prompt, student_answer,
+               correct_answer, is_correct, duration_seconds, error_type,
+               recommended_node_id, created_at
+        FROM node_learning_records
+        WHERE student_id = ?
+        ORDER BY id
+        """,
+        (student_id,),
     ).fetchall()
     return list(rows)

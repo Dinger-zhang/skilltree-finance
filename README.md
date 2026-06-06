@@ -1,59 +1,51 @@
 # skilltree-finance
 
-AI 技能树财务报表学习实验系统 —— 一个用于课堂或自学的本地 Python + Streamlit 教学 MVP。帮助零基础学生通过“前测 → 技能树学习 → 后测 → 学习报告”流程掌握基础财务报表知识，并记录完整学习日志。
+## 1. 项目简介
 
-## 亮点
+`skilltree-finance` 是一个基于 Python + Streamlit 的本地教育实验 MVP，主题为“AI 技能树财务报表学习实验系统”。
 
-- 基于技能树的逐步解锁学习路径（20 个节点）
-- 前测 / 后测题库与答题记录
-- 节点学习页：展示学习目标、解释、例题、误区、练习和掌握验证题
-- 答错诊断：记录错误类型并推荐回退节点
-- 后测对比：展示总分提升、各节点提升、仍薄弱节点和建议复习节点
-- 本地 SQLite 数据库（不依赖外部服务）
-- 学习日志与学习报告导出查看
+系统面向零基础学生，围绕基础财务报表知识构建技能树学习路径，记录学生的前测、节点学习、后测、诊断反馈和学习报告。项目第一版只在本地运行，使用 SQLite 存储数据，不接入真实支付、登录、云服务或外部数据库。
 
-## 快速开始（推荐）
-注意：下面给出两种方式：Conda（项目中提到的）和 Python venv。
+项目默认使用的 conda 环境名称为：
 
-1. 克隆并进入项目根目录（假设你已将仓库克隆到本地）：
-   ```powershell
-   cd E:\program\skilltree-finance
-   ```
-
-2A. 使用 Conda（项目默认）
-   ```powershell
-   conda create -n skilltree python=3.10 -y
-   conda activate skilltree
-   pip install -r requirements.txt
-   streamlit run app.py
-   ```
-
-2B. 使用 Python venv（无 Conda）
-   ```powershell
-   python -m venv .venv
-   .\.venv\Scripts\Activate.ps1
-   pip install -r requirements.txt
-   streamlit run app.py
-   ```
-
-3. 在浏览器打开（通常）：
-   ```text
-   http://localhost:8501
-   ```
-
-## 项目功能
-
-- 学生信息登记（姓名、学号、班级）
-- 前测与后测答题（记录得分）
-- 后测分析：对比前测和后测，输出总分提升、节点提升、薄弱节点和复习建议
-- 基于前置关系的技能树（20 节点）逐步解锁学习
-- 节点学习：选择知识节点，提交练习答案，系统记录用时与诊断结果
-- 节点掌握验证：答对掌握题后自动标记为“已掌握”，答错则标记为“薄弱”
-- 学习日志（进入系统、提交测试、完成节点、保存笔记等）
-- 学习报告：前后测成绩对比、节点完成进度、答题明细、日志导出
-
-## 项目结构（简要）
+```powershell
+skilltree
 ```
+
+## 2. 实验目标
+
+本项目用于支持一个完整的教育实验流程，核心目标包括：
+
+- 评估学生在学习前对基础财务报表知识的掌握情况。
+- 通过 20 个知识节点构建财务报表技能树。
+- 记录学生在每个节点上的学习行为、练习答案、用时和掌握状态。
+- 根据错题和掌握验证结果识别薄弱知识点。
+- 使用规则系统诊断错误类型，并推荐回退学习节点。
+- 比较前测和后测表现，观察学习效果。
+- 生成可导出的学习报告，为教师或研究者提供分析依据。
+
+## 3. 功能列表
+
+当前版本包含以下功能：
+
+- 学生信息登记：姓名、学号、班级。
+- 知识图谱 / 技能树：从 YAML 读取 20 个财务报表学习节点。
+- 节点状态管理：支持“未学习、学习中、已掌握、薄弱、需要复习”。
+- 前测功能：支持单选题、多选题、简答题。
+- 自动评分：单选题和多选题自动评分。
+- 人工评分预留：简答题第一版保存答案，暂按待人工评分处理。
+- 节点学习：展示学习目标、解释、例题、常见误区和练习题。
+- 掌握验证：答对掌握验证题后将节点标记为“已掌握”。
+- 错误诊断：答错后调用本地规则系统，输出错误类型和推荐回退节点。
+- 后测功能：覆盖与前测相同的知识节点，但题目不与前测完全相同。
+- 前后测对比：展示总分提升、各节点提升、仍然薄弱的节点和建议复习节点。
+- 学习报告：汇总完整学习记录、学习时长、节点状态、错误统计和复习建议。
+- CSV 导出：支持导出多类学习数据表。
+- 延迟测试预留：`answers.delayed_test` 字段已预留，用于一周后延迟测试。
+
+## 4. 项目目录
+
+```text
 skilltree-finance/
 ├── app.py
 ├── requirements.txt
@@ -61,137 +53,189 @@ skilltree-finance/
 ├── data/
 │   ├── knowledge_graph.yaml
 │   ├── questions.yaml
-│   └── skilltree_finance.sqlite3      # 运行后生成
+│   └── skilltree_finance.sqlite3      # 运行后自动生成，本地数据，不提交 Git
 ├── pages/
 │   ├── 1_Pretest.py
 │   ├── 3_LearnNode.py
-│   └── 4_Posttest.py
-└── src/
-    ├── __init__.py
-    ├── assessment.py
-    ├── content.py
-    ├── database.py
-    ├── diagnosis.py
-    └── knowledge_graph.py
+│   ├── 4_Posttest.py
+│   └── 5_Report.py
+├── src/
+│   ├── __init__.py
+│   ├── assessment.py
+│   ├── content.py
+│   ├── database.py
+│   ├── diagnosis.py
+│   └── knowledge_graph.py
+└── tests/
+    └── test_diagnosis.py
 ```
 
-说明：
-- `app.py`：Streamlit 主入口
-- `src/content.py`：解析并加载 YAML 内容（题库、知识图谱）
-- `src/database.py`：SQLite 初始化与数据读写封装
-- `src/assessment.py`：前测/后测题目逻辑与评分
-- `src/diagnosis.py`：节点掌握题错误诊断与回退节点推荐
-- `src/knowledge_graph.py`：技能树节点与前置关系处理
-- `pages/1_Pretest.py`：独立前测页面
-- `pages/3_LearnNode.py`：独立节点学习页面
-- `pages/4_Posttest.py`：独立后测页面，包含前后测对比分析
-- `data/knowledge_graph.yaml`：20 个财务报表学习节点定义
-- `data/questions.yaml`：前测与后测题库
+主要文件说明：
 
-## 数据存储
+- `app.py`：Streamlit 主入口。
+- `pages/1_Pretest.py`：独立前测页面。
+- `pages/3_LearnNode.py`：独立节点学习页面。
+- `pages/4_Posttest.py`：独立后测页面。
+- `pages/5_Report.py`：独立学习报告页面。
+- `data/knowledge_graph.yaml`：知识图谱和技能树节点数据。
+- `data/questions.yaml`：前测和后测题库。
+- `src/content.py`：YAML 内容加载。
+- `src/knowledge_graph.py`：知识节点校验、分层和状态定义。
+- `src/assessment.py`：题型识别、答案序列化、自动评分和得分统计。
+- `src/diagnosis.py`：本地规则诊断系统，不调用大模型。
+- `src/database.py`：SQLite 初始化、迁移和数据读写。
+- `tests/test_diagnosis.py`：诊断规则的简单测试脚本。
 
-- 使用本地 SQLite，首次运行会在 `data/` 下生成 `skilltree_finance.sqlite3`。
-- 默认不追踪该文件（.gitignore），属于本地实验数据。
-- 主要表：
-  - `students`：学生信息
-  - `answers`：答题记录（前测/后测），包含预留字段 `delayed_test` 用于一周后延迟测试
-  - `node_status`：每个节点的学习状态
-  - `node_learning_records`：节点练习、掌握验证题、答案、用时和诊断记录
-  - `learning_logs`：学习行为日志
+## 5. 安装方法
 
-## 后测页
+### 方式一：使用 conda 环境
 
-运行 `streamlit run app.py` 后，可以在左侧页面导航中进入 `Posttest` 页面。
+如果尚未创建环境：
 
-后测页支持：
-- 从 `data/questions.yaml` 读取 `posttest` 题目
-- 支持与前测一致的题型：单选题、多选题、简答题
-- 单选题和多选题自动评分，简答题第一版保存答案并等待人工评分
-- 保存后测答题结果到 SQLite
-- 对比最近一次前测和后测，展示总分提升、各节点提升、仍然薄弱的节点和建议复习节点
-- 后测错题节点会被标记为“需要复习”
-
-题库约束：
-- 后测题目不能与前测题干完全相同
-- 后测应覆盖与前测相同的一批 `node_id`
-- 当前 `answers.delayed_test` 字段已预留，用于后续扩展一周后延迟测试
-
-## 节点学习页
-
-运行 `streamlit run app.py` 后，可以在左侧页面导航中进入 `LearnNode` 页面。
-
-该页面支持：
-- 选择任意知识节点
-- 查看学习目标、解释、例题、常见误区和练习题
-- 提交练习题和掌握验证题答案
-- 自动记录学生答案和本次学习用时
-- 掌握验证题答对时，将节点状态写为“已掌握”
-- 掌握验证题答错时，调用 `src/diagnosis.py` 生成错误类型和推荐回退节点，并将节点状态写为“薄弱”
-
-## 诊断模块
-
-`src/diagnosis.py` 第一版使用本地规则系统，不调用大模型。核心函数：
-
-```python
-diagnose_answer(question_id, student_answer, correct_answer, question_meta)
+```powershell
+conda create -n skilltree python=3.10 -y
+conda activate skilltree
+pip install -r requirements.txt
 ```
 
-返回字段：
-- `is_correct`：是否正确
-- `error_type`：错误类型
-- `explanation`：诊断解释
-- `weak_node_ids`：薄弱知识节点
-- `recommended_node_ids`：推荐下一步学习节点
+如果环境已经存在：
 
-支持的错误类型：
-- `concept_confusion`：概念混淆
-- `calculation_error`：计算错误
-- `statement_misread`：题意理解错误
-- `prerequisite_missing`：前置知识缺失
-- `profit_cashflow_confusion`：利润与现金流混淆
-- `liability_asset_confusion`：资产负债混淆
-- `ratio_formula_error`：财务比率公式错误
+```powershell
+conda activate skilltree
+pip install -r requirements.txt
+```
 
-推荐逻辑主要依据 `question_meta` 中的：
-- `node_id`
-- `error_tags`
-- `prerequisites`
-- 可选的 `recommended_node_ids`
+### 方式二：使用 Python venv
 
-## 开发与调试
-- 安装依赖：`pip install -r requirements.txt`
-- 本地运行：`streamlit run app.py`
-- 想快速清空/重置数据库（开发时常用，请先备份）：
-  - 备份数据库文件（PowerShell）：
-    ```powershell
-    Copy-Item -Path .\data\skilltree_finance.sqlite3 -Destination .\data\skilltree_finance.sqlite3.bak
-    ```
-  - 删除数据库（下一次启动会重新创建）：
-    ```powershell
-    Remove-Item -Path .\data\skilltree_finance.sqlite3
-    ```
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
 
-## 配置与扩展
-- 教学内容（节点、题目）用 YAML 管理，位于 `data/knowledge_graph.yaml` 与 `data/questions.yaml`，易于扩展。
-- 如果要新增节点或调整前置关系，请编辑 `data/knowledge_graph.yaml`，并同步调整 `src/knowledge_graph.py` 中的解析/校验逻辑（如有必要）。
+项目依赖写在 `requirements.txt` 中，主要包括：
 
-## 测试与质量
-- 诊断模块包含无第三方依赖的简单测试脚本：
-  ```powershell
-  conda activate skilltree
-  python tests/test_diagnosis.py
-  ```
-- 也可以直接运行模块自检：
-  ```powershell
-  python src/diagnosis.py
-  ```
-- 建议后续继续补充针对 `src/database.py` 与 `src/assessment.py` 的核心函数测试。
+- Streamlit
+- pandas
+- PyYAML
 
-## 贡献
-欢迎提交 issue 或 pull request。请尽量：
-- 提供重现步骤或复现数据（不含真实个人隐私）
-- 对新增功能写明设计意图并附上简单示例
-- 如果修改数据结构（DB 或 YAML），在 PR 描述中说明迁移步骤
+## 6. 运行方法
 
-## 许可与免责声明
-本项目用于教学与实验目的。请勿在未经许可的情况下上传包含敏感或真实个人信息的数据到公共仓库。
+在项目根目录运行：
+
+```powershell
+conda activate skilltree
+streamlit run app.py
+```
+
+启动后在浏览器打开 Streamlit 提供的地址，通常是：
+
+```text
+http://localhost:8501
+```
+
+首次运行时，系统会自动创建本地 SQLite 数据库：
+
+```text
+data/skilltree_finance.sqlite3
+```
+
+该数据库文件用于保存本地实验数据，默认不提交到 GitHub。
+
+## 7. 实验流程
+
+建议按以下顺序完成实验：
+
+1. 登记学生信息
+
+   在侧边栏填写学生姓名、学号和班级。系统会将学生信息保存到 SQLite。
+
+2. 完成前测
+
+   进入 `Pretest` 页面，完成前测题目。前测包含单选题、多选题和简答题。单选题、多选题自动评分，简答题保存答案等待人工评分。
+
+3. 查看知识图谱
+
+   在主页面或知识图谱区域查看 20 个财务报表学习节点。每个节点有层级、前置节点、学习目标和当前状态。
+
+4. 进行节点学习
+
+   进入 `LearnNode` 页面，选择一个知识节点，阅读学习目标、解释、例题和常见误区，并完成练习题与掌握验证题。
+
+5. 接收诊断反馈
+
+   如果掌握验证题答错，系统会调用 `src/diagnosis.py` 中的本地规则系统，诊断错误类型并推荐回退学习节点。
+
+6. 完成后测
+
+   进入 `Posttest` 页面，完成后测。后测覆盖与前测相同的一批知识节点，但题目不与前测完全相同。
+
+7. 查看学习报告
+
+   进入 `Report` 页面，选择学生后查看完整学习报告，包括前后测对比、学习时长、掌握节点数、薄弱节点、错误类型统计和推荐复习节点。
+
+## 8. 数据导出说明
+
+报告页使用 pandas 生成表格，并支持导出 CSV。
+
+当前支持导出的数据包括：
+
+- 节点得分对比 CSV
+- 节点状态 CSV
+- 薄弱节点 CSV
+- 常见错误类型统计 CSV
+- 推荐复习节点 CSV
+- 完整答题记录 CSV
+- 完整节点学习记录 CSV
+
+导出的 CSV 使用 `utf-8-sig` 编码，便于在 Excel 中直接打开中文内容。
+
+SQLite 中主要表如下：
+
+- `students`：学生信息。
+- `answers`：前测、后测和延迟测试预留答题记录。
+- `node_status`：每个学生在每个知识节点上的学习状态。
+- `node_learning_records`：节点练习、掌握验证题、学生答案、用时、错误类型和推荐节点。
+- `learning_logs`：学习行为日志。
+
+如果需要重置本地实验数据，可以删除数据库文件：
+
+```powershell
+Remove-Item -Path .\data\skilltree_finance.sqlite3
+```
+
+下次运行系统时会自动重新创建数据库。
+
+## 9. 后续可扩展方向
+
+后续可以从以下方向继续扩展：
+
+- 增加教师端人工评分页面，用于批改简答题。
+- 实现一周后延迟测试，使用已预留的 `delayed_test` 字段。
+- 增加更丰富的题型，例如判断题、案例分析题和报表阅读题。
+- 扩展知识图谱节点，从基础财务报表扩展到财务分析、估值和经营诊断。
+- 优化错误诊断规则，引入更细粒度的错误标签和回退路径。
+- 增加可视化图表，例如学习路径图、节点掌握热力图、前后测雷达图。
+- 增加批量导出功能，支持按班级导出所有学生报告。
+- 增加自动化测试，覆盖数据库迁移、评分逻辑、诊断逻辑和页面核心流程。
+- 将本地 SQLite 替换为可选数据库后端，例如 PostgreSQL。
+- 在合规前提下接入大模型，用于生成个性化解释、错因分析和复习计划。
+
+## 测试
+
+诊断模块包含简单测试脚本：
+
+```powershell
+conda activate skilltree
+python tests/test_diagnosis.py
+```
+
+也可以直接运行模块自检：
+
+```powershell
+python src/diagnosis.py
+```
+
+## 免责声明
+
+本项目用于教学实验和 MVP 验证，不应直接用于正式教学评价或高风险决策。请不要将包含真实隐私信息的数据库文件上传到公共仓库。
