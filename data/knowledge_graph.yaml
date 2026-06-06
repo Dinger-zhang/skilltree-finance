@@ -1,0 +1,315 @@
+nodes:
+  - id: financial_statement_overview
+    title: 财务报表三件套
+    level: 1
+    statement: 基础概念
+    prerequisites: []
+    summary: 财务报表通常包括资产负债表、利润表和现金流量表，三张表分别回答企业有什么、赚不赚钱、现金怎么流动。
+    learning_goals:
+      - 说出三张核心财务报表的名称
+      - 区分每张报表回答的基本问题
+    example: 利润表像成绩单，资产负债表像某一天的财务快照，现金流量表像钱包流水。
+    check_question:
+      question: 哪张表主要展示企业在某一时点拥有的资源和承担的债务？
+      answer: 资产负债表
+
+  - id: accounting_equation
+    title: 会计恒等式
+    level: 1
+    statement: 基础概念
+    prerequisites:
+      - financial_statement_overview
+    summary: 会计恒等式是资产 = 负债 + 所有者权益，是理解资产负债表的基础。
+    learning_goals:
+      - 理解资产、负债和所有者权益的关系
+      - 用恒等式检查资产负债表是否平衡
+    example: 公司有 100 元资产，其中 40 元借来，剩下 60 元属于股东权益。
+    check_question:
+      question: 如果资产为 100，负债为 40，所有者权益是多少？
+      answer: 60
+
+  - id: balance_sheet_assets
+    title: 资产：企业拥有或控制的资源
+    level: 2
+    statement: 资产负债表
+    prerequisites:
+      - accounting_equation
+    summary: 资产是企业拥有或控制、预期能带来经济利益的资源，常见项目包括货币资金、应收账款、存货和固定资产。
+    learning_goals:
+      - 识别常见资产项目
+      - 区分流动资产和非流动资产
+    example: 银行存款、客户欠款、仓库里的商品和机器设备通常都是资产。
+    check_question:
+      question: 客户已经买货但还没付款，通常记在哪个资产项目？
+      answer: 应收账款
+
+  - id: balance_sheet_liabilities_equity
+    title: 负债与所有者权益
+    level: 2
+    statement: 资产负债表
+    prerequisites:
+      - accounting_equation
+    summary: 负债是企业未来需要偿还的义务，所有者权益是股东对企业净资产的剩余权益。
+    learning_goals:
+      - 区分负债和所有者权益
+      - 理解资金来源可以来自债权人或股东
+    example: 银行贷款是负债，股东投入资本是所有者权益。
+    check_question:
+      question: 公司向银行借入一年期贷款，通常属于资产、负债还是所有者权益？
+      answer: 负债
+
+  - id: income_statement_revenue
+    title: 收入：经营活动带来的流入
+    level: 2
+    statement: 利润表
+    prerequisites:
+      - financial_statement_overview
+    summary: 收入通常来自销售商品或提供服务，是利润表的起点。
+    learning_goals:
+      - 理解收入不等同于收款
+      - 识别主营业务收入
+    example: 咖啡店卖出一杯咖啡形成销售收入，即使客户使用月结方式稍后付款。
+    check_question:
+      question: 收入一定代表现金已经收到吗？
+      answer: 不一定
+
+  - id: income_statement_expenses
+    title: 费用：为取得收入发生的耗费
+    level: 2
+    statement: 利润表
+    prerequisites:
+      - financial_statement_overview
+    summary: 费用是企业为了获得收入或维持经营而发生的资源消耗，如成本、工资、租金和营销费用。
+    learning_goals:
+      - 识别常见费用项目
+      - 理解费用会减少利润
+    example: 餐厅采购食材、支付员工工资和店铺租金，通常都会形成费用。
+    check_question:
+      question: 工资费用增加，在其他条件不变时会让利润增加还是减少？
+      answer: 减少
+
+  - id: net_profit
+    title: 净利润：收入减费用后的结果
+    level: 3
+    statement: 利润表
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+    summary: 净利润大致可以理解为收入扣除成本、费用、税费等之后的经营成果。
+    learning_goals:
+      - 计算简单场景下的净利润
+      - 理解盈利能力和收入规模不是一回事
+    example: 收入 100 元，成本和费用合计 70 元，净利润约为 30 元。
+    check_question:
+      question: 收入 200，费用 150，净利润是多少？
+      answer: 50
+
+  - id: cash_flow_overview
+    title: 现金流量表概览
+    level: 2
+    statement: 现金流量表
+    prerequisites:
+      - financial_statement_overview
+    summary: 现金流量表解释企业现金从哪里来、到哪里去，通常分为经营、投资和筹资三类现金流。
+    learning_goals:
+      - 说出现金流量表的三类活动
+      - 理解利润和现金流可能不同
+    example: 企业赚钱但客户没付款，利润可能为正，现金流却可能紧张。
+    check_question:
+      question: 现金流量表通常分为经营、投资和哪一类活动？
+      answer: 筹资
+
+  - id: operating_cash_flow
+    title: 经营活动现金流
+    level: 3
+    statement: 现金流量表
+    prerequisites:
+      - cash_flow_overview
+    summary: 经营活动现金流反映主营业务带来的现金流入和流出，如收客户货款、付供应商货款、付工资。
+    learning_goals:
+      - 识别经营活动现金流项目
+      - 理解经营现金流对企业生存的重要性
+    example: 收到客户货款通常是经营现金流入，支付员工工资通常是经营现金流出。
+    check_question:
+      question: 收到客户支付的货款通常属于哪类现金流？
+      answer: 经营活动现金流
+
+  - id: investing_financing_cash_flow
+    title: 投资与筹资现金流
+    level: 3
+    statement: 现金流量表
+    prerequisites:
+      - cash_flow_overview
+    summary: 投资活动现金流常与购买或处置长期资产有关，筹资活动现金流常与借款、还款、股权融资和分红有关。
+    learning_goals:
+      - 区分投资活动和筹资活动现金流
+      - 识别购买设备、借款和分红的现金流分类
+    example: 购买生产设备属于投资现金流出，向银行借款属于筹资现金流入。
+    check_question:
+      question: 企业向银行借入长期贷款，通常属于哪类现金流？
+      answer: 筹资活动现金流
+
+  - id: accrual_vs_cash
+    title: 权责发生制与现金制
+    level: 3
+    statement: 基础概念
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+      - cash_flow_overview
+    summary: 权责发生制关注收入和费用属于哪个期间，现金制关注现金是否实际收付。
+    learning_goals:
+      - 理解收入确认和收款可能不同步
+      - 解释利润与现金流差异
+    example: 本月发货并开票但下月收款，本月可能确认收入，但现金下月才流入。
+    check_question:
+      question: 客户尚未付款但商品已交付，权责发生制下可能确认收入吗？
+      answer: 可能
+
+  - id: depreciation_amortization
+    title: 折旧与摊销
+    level: 3
+    statement: 利润表和资产负债表
+    prerequisites:
+      - balance_sheet_assets
+      - income_statement_expenses
+    summary: 折旧和摊销把长期资产的成本分摊到多个会计期间，会影响费用和资产账面价值。
+    learning_goals:
+      - 理解折旧不是当期现金流出
+      - 说明折旧如何影响利润
+    example: 购买机器时一次性付现金，但机器成本可能通过折旧在几年内逐步计入费用。
+    check_question:
+      question: 折旧费用通常会直接导致当期现金流出吗？
+      answer: 不会
+
+  - id: working_capital
+    title: 营运资本
+    level: 4
+    statement: 资产负债表
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+    summary: 营运资本通常指流动资产减流动负债，用来观察企业短期运营资金是否充足。
+    learning_goals:
+      - 计算简单的营运资本
+      - 理解存货、应收账款和应付账款对现金的影响
+    example: 流动资产 80，流动负债 50，营运资本为 30。
+    check_question:
+      question: 流动资产 120，流动负债 90，营运资本是多少？
+      answer: 30
+
+  - id: gross_margin
+    title: 毛利率
+    level: 4
+    statement: 利润表
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+    summary: 毛利率常用来衡量销售收入扣除直接成本后的盈利空间，公式为毛利除以收入。
+    learning_goals:
+      - 计算简单毛利率
+      - 用毛利率初步判断产品盈利空间
+    example: 收入 100，销售成本 60，毛利 40，毛利率 40%。
+    check_question:
+      question: 收入 100，销售成本 70，毛利率是多少？
+      answer: 30%
+
+  - id: current_ratio
+    title: 流动比率
+    level: 4
+    statement: 财务分析
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+      - working_capital
+    summary: 流动比率 = 流动资产 / 流动负债，用于观察短期偿债能力。
+    learning_goals:
+      - 计算流动比率
+      - 理解短期偿债能力的基本含义
+    example: 流动资产 100，流动负债 50，流动比率为 2.0。
+    check_question:
+      question: 流动资产 90，流动负债 60，流动比率是多少？
+      answer: 1.5
+
+  - id: debt_to_asset
+    title: 资产负债率
+    level: 4
+    statement: 财务分析
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+    summary: 资产负债率 = 总负债 / 总资产，用于观察企业资产中有多少由债务资金支持。
+    learning_goals:
+      - 计算资产负债率
+      - 理解杠杆水平和偿债风险
+    example: 总资产 100，总负债 45，资产负债率为 45%。
+    check_question:
+      question: 总资产 200，总负债 80，资产负债率是多少？
+      answer: 40%
+
+  - id: roe
+    title: 净资产收益率 ROE
+    level: 4
+    statement: 财务分析
+    prerequisites:
+      - net_profit
+      - balance_sheet_liabilities_equity
+    summary: ROE = 净利润 / 所有者权益，用于观察股东投入资本带来的回报。
+    learning_goals:
+      - 计算简单 ROE
+      - 理解 ROE 与盈利能力和资本结构相关
+    example: 净利润 12，所有者权益 100，ROE 为 12%。
+    check_question:
+      question: 净利润 20，所有者权益 100，ROE 是多少？
+      answer: 20%
+
+  - id: statement_links
+    title: 三张报表之间的勾稽关系
+    level: 5
+    statement: 综合理解
+    prerequisites:
+      - net_profit
+      - balance_sheet_assets
+      - cash_flow_overview
+    summary: 三张报表不是孤立的，净利润影响留存收益，折旧连接利润和现金流，现金变化连接现金流量表和资产负债表。
+    learning_goals:
+      - 说出至少两种报表之间的连接关系
+      - 理解单看一张表容易误判
+    example: 现金流量表中的期末现金余额应能对应资产负债表中的货币资金。
+    check_question:
+      question: 现金流量表的期末现金余额通常对应资产负债表中的哪个项目？
+      answer: 货币资金
+
+  - id: basic_analysis_process
+    title: 基础财务分析流程
+    level: 5
+    statement: 财务分析
+    prerequisites:
+      - gross_margin
+      - current_ratio
+      - debt_to_asset
+      - roe
+    summary: 基础分析可以按盈利能力、偿债能力、运营效率和现金流质量四个角度逐步观察。
+    learning_goals:
+      - 使用几个核心指标做初步分析
+      - 避免只看单一指标下结论
+    example: 一家公司利润高但经营现金流长期为负，需要继续检查应收账款和存货。
+    check_question:
+      question: 基础分析时只看利润是否足够？
+      answer: 不足够
+
+  - id: red_flags
+    title: 初学者常见风险信号
+    level: 6
+    statement: 综合理解
+    prerequisites:
+      - statement_links
+      - basic_analysis_process
+    summary: 常见风险信号包括收入增长但现金流恶化、应收账款快速上升、存货积压、负债过高和利润率持续下滑。
+    learning_goals:
+      - 识别基础财务异常信号
+      - 提出进一步追问而不是直接下结论
+    example: 销售收入大涨但应收账款也大涨，可能说明很多销售还没有变成现金。
+    check_question:
+      question: 收入增长但经营现金流长期为负，是否值得进一步关注？
+      answer: 是

@@ -1,0 +1,221 @@
+pretest:
+  - id: pre_01
+    node_id: financial_statement_overview
+    question: 财务报表三件套通常包括哪三张表？
+    options:
+      A: 资产负债表、利润表、现金流量表
+      B: 预算表、采购表、工资表
+      C: 订单表、客户表、库存表
+      D: 项目表、日报表、审批表
+    answer: A
+    explanation: 基础财务报表通常指资产负债表、利润表和现金流量表。
+
+  - id: pre_02
+    node_id: accounting_equation
+    question: 会计恒等式正确的是哪一个？
+    options:
+      A: 资产 = 收入 - 费用
+      B: 资产 = 负债 + 所有者权益
+      C: 利润 = 资产 + 负债
+      D: 现金 = 收入 + 成本
+    answer: B
+    explanation: 资产负债表的核心关系是资产等于负债加所有者权益。
+
+  - id: pre_03
+    node_id: balance_sheet_assets
+    question: 下列哪一项通常属于资产？
+    options:
+      A: 银行短期借款
+      B: 应付账款
+      C: 机器设备
+      D: 股利分配
+    answer: C
+    explanation: 机器设备是企业拥有或控制、可带来经济利益的资源。
+
+  - id: pre_04
+    node_id: balance_sheet_liabilities_equity
+    question: 企业向银行借入一笔贷款，通常会形成什么？
+    options:
+      A: 负债
+      B: 收入
+      C: 费用
+      D: 存货
+    answer: A
+    explanation: 借款代表企业未来需要偿还的义务，通常属于负债。
+
+  - id: pre_05
+    node_id: income_statement_revenue
+    question: 利润表的起点通常是什么？
+    options:
+      A: 现金余额
+      B: 销售收入
+      C: 银行贷款
+      D: 固定资产
+    answer: B
+    explanation: 利润表通常从收入开始，再扣除成本、费用和税费等。
+
+  - id: pre_06
+    node_id: net_profit
+    question: 收入 100，费用 75，不考虑税费时净利润是多少？
+    options:
+      A: 25
+      B: 75
+      C: 100
+      D: 175
+    answer: A
+    explanation: 净利润可以简单理解为收入减费用，所以是 25。
+
+  - id: pre_07
+    node_id: cash_flow_overview
+    question: 现金流量表通常不包括哪一类活动？
+    options:
+      A: 经营活动
+      B: 投资活动
+      C: 筹资活动
+      D: 考勤活动
+    answer: D
+    explanation: 现金流量表通常分为经营、投资和筹资三类活动。
+
+  - id: pre_08
+    node_id: accrual_vs_cash
+    question: 权责发生制下，收入确认和现金收款一定发生在同一天吗？
+    options:
+      A: 一定
+      B: 不一定
+      C: 只在年末发生
+      D: 只在上市公司发生
+    answer: B
+    explanation: 权责发生制关注交易归属期间，现金可能提前或延后收付。
+
+  - id: pre_09
+    node_id: current_ratio
+    question: 流动比率的常见计算公式是什么？
+    options:
+      A: 流动资产 / 流动负债
+      B: 总负债 / 总资产
+      C: 净利润 / 收入
+      D: 毛利 / 存货
+    answer: A
+    explanation: 流动比率用于观察短期偿债能力，公式是流动资产除以流动负债。
+
+  - id: pre_10
+    node_id: roe
+    question: ROE 通常用来观察什么？
+    options:
+      A: 股东权益回报
+      B: 仓库面积
+      C: 员工人数
+      D: 产品销量
+    answer: A
+    explanation: ROE 是净资产收益率，反映股东投入资本带来的回报。
+
+posttest:
+  - id: post_01
+    node_id: statement_links
+    question: 现金流量表中的期末现金余额通常可以和资产负债表中的哪个项目对应？
+    options:
+      A: 货币资金
+      B: 营业收入
+      C: 销售费用
+      D: 应付股利
+    answer: A
+    explanation: 现金流量表解释现金变化，期末现金余额通常对应资产负债表中的货币资金。
+
+  - id: post_02
+    node_id: accrual_vs_cash
+    question: 公司本月确认了大量销售收入，但客户约定下月付款。本月最可能增加的是哪项？
+    options:
+      A: 应收账款
+      B: 应付账款
+      C: 折旧费用
+      D: 短期借款
+    answer: A
+    explanation: 已销售但未收款，通常会形成应收账款。
+
+  - id: post_03
+    node_id: gross_margin
+    question: 收入 200，销售成本 120，毛利率是多少？
+    options:
+      A: 20%
+      B: 40%
+      C: 60%
+      D: 80%
+    answer: B
+    explanation: 毛利是 80，毛利率 = 80 / 200 = 40%。
+
+  - id: post_04
+    node_id: current_ratio
+    question: 流动资产 150，流动负债 100，流动比率是多少？
+    options:
+      A: 0.5
+      B: 1.0
+      C: 1.5
+      D: 2.5
+    answer: C
+    explanation: 流动比率 = 150 / 100 = 1.5。
+
+  - id: post_05
+    node_id: debt_to_asset
+    question: 总资产 500，总负债 300，资产负债率是多少？
+    options:
+      A: 30%
+      B: 40%
+      C: 50%
+      D: 60%
+    answer: D
+    explanation: 资产负债率 = 300 / 500 = 60%。
+
+  - id: post_06
+    node_id: depreciation_amortization
+    question: 关于折旧，下列说法更准确的是哪一个？
+    options:
+      A: 折旧一定代表当期付出现金
+      B: 折旧会影响利润，但通常不是当期现金流出
+      C: 折旧只出现在现金流量表中
+      D: 折旧会直接增加收入
+    answer: B
+    explanation: 折旧是长期资产成本的期间分摊，影响利润但通常不是当期现金流出。
+
+  - id: post_07
+    node_id: operating_cash_flow
+    question: 下列哪一项通常属于经营活动现金流入？
+    options:
+      A: 收到客户货款
+      B: 购买生产设备
+      C: 向银行借入贷款
+      D: 向股东分红
+    answer: A
+    explanation: 收客户货款来自主营业务，通常属于经营活动现金流入。
+
+  - id: post_08
+    node_id: working_capital
+    question: 存货大量增加，其他条件不变，通常会对现金造成什么影响？
+    options:
+      A: 可能占用现金
+      B: 一定增加净利润
+      C: 一定减少负债
+      D: 与现金永远无关
+    answer: A
+    explanation: 存货增加常意味着资金被占用，需要进一步观察周转和销售情况。
+
+  - id: post_09
+    node_id: basic_analysis_process
+    question: 一家公司净利润为正，但经营现金流长期为负。更合理的做法是什么？
+    options:
+      A: 直接判断公司没有任何问题
+      B: 继续检查应收账款、存货和收入质量
+      C: 只看公司名称
+      D: 忽略现金流量表
+    answer: B
+    explanation: 利润和现金流背离时，应进一步检查收入质量和营运资本变化。
+
+  - id: post_10
+    node_id: red_flags
+    question: 下列哪种情况更像基础财务风险信号？
+    options:
+      A: 收入增长，同时应收账款异常快速增长
+      B: 三张报表数字完全一致
+      C: 公司有员工工资支出
+      D: 公司有办公用品采购
+    answer: A
+    explanation: 收入增长但应收账款异常增长，可能说明销售尚未及时转化为现金。
