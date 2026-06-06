@@ -16,9 +16,9 @@ def load_yaml(path: PathLike) -> dict[str, Any]:
 
 
 def load_knowledge_graph(path: PathLike) -> list[dict[str, Any]]:
-    data = load_yaml(path)
-    nodes = data.get("nodes", [])
-    return sorted(nodes, key=lambda node: (node.get("level", 0), node.get("id", "")))
+    from src.knowledge_graph import load_knowledge_graph as load_graph
+
+    return load_graph(path)
 
 
 def load_questions(path: PathLike) -> dict[str, list[dict[str, Any]]]:

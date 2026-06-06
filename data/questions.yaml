@@ -1,5 +1,7 @@
 pretest:
   - id: pre_01
+    type: single_choice
+    score: 1
     node_id: financial_statement_overview
     question: 财务报表三件套通常包括哪三张表？
     options:
@@ -11,6 +13,8 @@ pretest:
     explanation: 基础财务报表通常指资产负债表、利润表和现金流量表。
 
   - id: pre_02
+    type: single_choice
+    score: 1
     node_id: accounting_equation
     question: 会计恒等式正确的是哪一个？
     options:
@@ -22,17 +26,24 @@ pretest:
     explanation: 资产负债表的核心关系是资产等于负债加所有者权益。
 
   - id: pre_03
+    type: multiple_choice
+    score: 2
     node_id: balance_sheet_assets
-    question: 下列哪一项通常属于资产？
+    question: 下列哪些项目通常属于资产？（多选）
     options:
       A: 银行短期借款
-      B: 应付账款
+      B: 应收账款
       C: 机器设备
-      D: 股利分配
-    answer: C
-    explanation: 机器设备是企业拥有或控制、可带来经济利益的资源。
+      D: 货币资金
+    answer:
+      - B
+      - C
+      - D
+    explanation: 应收账款、机器设备和货币资金通常属于资产；银行短期借款属于负债。
 
   - id: pre_04
+    type: single_choice
+    score: 1
     node_id: balance_sheet_liabilities_equity
     question: 企业向银行借入一笔贷款，通常会形成什么？
     options:
@@ -44,6 +55,8 @@ pretest:
     explanation: 借款代表企业未来需要偿还的义务，通常属于负债。
 
   - id: pre_05
+    type: single_choice
+    score: 1
     node_id: income_statement_revenue
     question: 利润表的起点通常是什么？
     options:
@@ -55,6 +68,8 @@ pretest:
     explanation: 利润表通常从收入开始，再扣除成本、费用和税费等。
 
   - id: pre_06
+    type: single_choice
+    score: 1
     node_id: net_profit
     question: 收入 100，费用 75，不考虑税费时净利润是多少？
     options:
@@ -66,28 +81,32 @@ pretest:
     explanation: 净利润可以简单理解为收入减费用，所以是 25。
 
   - id: pre_07
+    type: multiple_choice
+    score: 2
     node_id: cash_flow_overview
-    question: 现金流量表通常不包括哪一类活动？
+    question: 现金流量表通常包括哪些活动分类？（多选）
     options:
       A: 经营活动
       B: 投资活动
       C: 筹资活动
       D: 考勤活动
-    answer: D
+    answer:
+      - A
+      - B
+      - C
     explanation: 现金流量表通常分为经营、投资和筹资三类活动。
 
   - id: pre_08
+    type: short_answer
+    score: 2
     node_id: accrual_vs_cash
-    question: 权责发生制下，收入确认和现金收款一定发生在同一天吗？
-    options:
-      A: 一定
-      B: 不一定
-      C: 只在年末发生
-      D: 只在上市公司发生
-    answer: B
-    explanation: 权责发生制关注交易归属期间，现金可能提前或延后收付。
+    question: 请用自己的话解释：为什么利润和现金流可能不同？
+    answer: 权责发生制下收入费用确认时间可能与现金收付时间不同，应收账款、存货和折旧等都会造成利润与现金流差异。
+    explanation: 本题为简答题，第一版先保存答案，后续由教师人工评分。
 
   - id: pre_09
+    type: single_choice
+    score: 1
     node_id: current_ratio
     question: 流动比率的常见计算公式是什么？
     options:
@@ -99,15 +118,12 @@ pretest:
     explanation: 流动比率用于观察短期偿债能力，公式是流动资产除以流动负债。
 
   - id: pre_10
+    type: short_answer
+    score: 2
     node_id: roe
-    question: ROE 通常用来观察什么？
-    options:
-      A: 股东权益回报
-      B: 仓库面积
-      C: 员工人数
-      D: 产品销量
-    answer: A
-    explanation: ROE 是净资产收益率，反映股东投入资本带来的回报。
+    question: ROE 通常用来观察什么？请简要说明。
+    answer: ROE 通常用来观察股东或所有者权益的回报水平，反映净利润相对于所有者权益的比例。
+    explanation: 本题为简答题，第一版先保存答案，后续由教师人工评分。
 
 posttest:
   - id: post_01

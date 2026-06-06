@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from src.knowledge_graph import STATUS_NOT_STARTED, STATUS_VALUES, normalize_status
+
 
 DB_PATH = Path("data/skilltree_finance.sqlite3")
 PathLike = Union[str, Path]
@@ -21,6 +23,82 @@ def connect(db_path: PathLike = DB_PATH) -> sqlite3.Connection:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+
+
+def create_node_status_table(conn: sqlite3.Connection) -> None:
+    allowed_statuses = "', '".join(STATUS_VALUES)
+    conn.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS node_status (
+            student_id INTEGER NOT NULL,
+            node_id TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('{allowed_statuses}')),
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY(student_id, node_id),
+            FOREIGN KEY(student_id) REFERENCES students(id)
+        )
+        """
+    )
+
+
+def migrate_node_status_table(conn: sqlite3.Connection) -> None:
+    row = conn.execute(
+        """
+        SELECT sql
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'node_status'
+        """
+    ).fetchone()
+    if not row:
+        create_node_status_table(conn)
+        return
+
+    table_sql = row["sql"] or ""
+    if STATUS_NOT_STARTED in table_sql and "locked" not in table_sql:
+        return
+
+    old_rows = conn.execute(
+        "SELECT student_id, node_id, status, updated_at FROM node_status"
+    ).fetchall()
+
+    conn.execute("ALTER TABLE node_status RENAME TO node_status_legacy")
+    create_node_status_table(conn)
+    for old_row in old_rows:
+        conn.execute(
+            """
+            INSERT OR REPLACE INTO node_status(student_id, node_id, status, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                old_row["student_id"],
+                old_row["node_id"],
+                normalize_status(old_row["status"]),
+                old_row["updated_at"],
+            ),
+        )
+    conn.execute("DROP TABLE node_status_legacy")
+
+
+def table_columns(conn: sqlite3.Connection, table_name: str) -> set[str]:
+    rows = conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+    return {row["name"] for row in rows}
+
+
+def ensure_answers_table_columns(conn: sqlite3.Connection) -> None:
+    columns = table_columns(conn, "answers")
+    column_sql = {
+        "question_type": "ALTER TABLE answers ADD COLUMN question_type TEXT",
+        "node_id": "ALTER TABLE answers ADD COLUMN node_id TEXT",
+        "score": "ALTER TABLE answers ADD COLUMN score REAL",
+        "max_score": "ALTER TABLE answers ADD COLUMN max_score REAL",
+        "needs_manual_grading": (
+            "ALTER TABLE answers ADD COLUMN needs_manual_grading INTEGER DEFAULT 0"
+        ),
+        "grading_status": "ALTER TABLE answers ADD COLUMN grading_status TEXT",
+    }
+    for column_name, sql in column_sql.items():
+        if column_name not in columns:
+            conn.execute(sql)
 
 
 def init_db(conn: sqlite3.Connection) -> None:
@@ -42,16 +120,13 @@ def init_db(conn: sqlite3.Connection) -> None:
             selected_answer TEXT NOT NULL,
             correct_answer TEXT NOT NULL,
             is_correct INTEGER NOT NULL CHECK(is_correct IN (0, 1)),
+            question_type TEXT,
+            node_id TEXT,
+            score REAL,
+            max_score REAL,
+            needs_manual_grading INTEGER DEFAULT 0,
+            grading_status TEXT,
             created_at TEXT NOT NULL,
-            FOREIGN KEY(student_id) REFERENCES students(id)
-        );
-
-        CREATE TABLE IF NOT EXISTS node_status (
-            student_id INTEGER NOT NULL,
-            node_id TEXT NOT NULL,
-            status TEXT NOT NULL CHECK(status IN ('locked', 'available', 'completed')),
-            updated_at TEXT NOT NULL,
-            PRIMARY KEY(student_id, node_id),
             FOREIGN KEY(student_id) REFERENCES students(id)
         );
 
@@ -72,6 +147,8 @@ def init_db(conn: sqlite3.Connection) -> None:
             ON learning_logs(student_id, created_at);
         """
     )
+    ensure_answers_table_columns(conn)
+    migrate_node_status_table(conn)
     conn.commit()
 
 
@@ -125,14 +202,30 @@ def save_answer(
     question_id: str,
     selected_answer: str,
     correct_answer: str,
+    is_correct: Optional[bool] = None,
+    question_type: str = "",
+    node_id: str = "",
+    score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    needs_manual_grading: bool = False,
+    grading_status: Optional[str] = None,
 ) -> None:
+    answer_is_correct = selected_answer == correct_answer if is_correct is None else is_correct
+    if max_score is None:
+        max_score = 1.0
+    if score is None:
+        score = max_score if answer_is_correct else 0.0
+    if grading_status is None:
+        grading_status = "pending_manual" if needs_manual_grading else "auto_graded"
+
     conn.execute(
         """
         INSERT INTO answers(
             student_id, phase, question_id, selected_answer,
-            correct_answer, is_correct, created_at
+            correct_answer, is_correct, question_type, node_id,
+            score, max_score, needs_manual_grading, grading_status, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             student_id,
@@ -140,11 +233,39 @@ def save_answer(
             question_id,
             selected_answer,
             correct_answer,
-            int(selected_answer == correct_answer),
+            int(answer_is_correct),
+            question_type,
+            node_id,
+            float(score),
+            float(max_score),
+            int(needs_manual_grading),
+            grading_status,
             now_text(),
         ),
     )
     conn.commit()
+
+
+def save_answer_result(
+    conn: sqlite3.Connection,
+    student_id: int,
+    phase: str,
+    result: dict[str, Any],
+) -> None:
+    save_answer(
+        conn,
+        student_id,
+        phase,
+        result["question_id"],
+        result["selected_answer"],
+        result["correct_answer"],
+        is_correct=bool(result["is_correct"]),
+        question_type=str(result.get("question_type", "")),
+        node_id=str(result.get("node_id", "")),
+        score=float(result.get("score", 0)),
+        max_score=float(result.get("max_score", 1)),
+        needs_manual_grading=bool(result.get("needs_manual_grading", False)),
+    )
 
 
 def get_latest_answers(
@@ -174,7 +295,7 @@ def get_node_statuses(conn: sqlite3.Connection, student_id: int) -> dict[str, st
         "SELECT node_id, status FROM node_status WHERE student_id = ?",
         (student_id,),
     ).fetchall()
-    return {row["node_id"]: row["status"] for row in rows}
+    return {row["node_id"]: normalize_status(row["status"]) for row in rows}
 
 
 def set_node_status(
@@ -183,6 +304,7 @@ def set_node_status(
     node_id: str,
     status: str,
 ) -> None:
+    normalized_status = normalize_status(status)
     conn.execute(
         """
         INSERT INTO node_status(student_id, node_id, status, updated_at)
@@ -191,7 +313,7 @@ def set_node_status(
             status = excluded.status,
             updated_at = excluded.updated_at
         """,
-        (student_id, node_id, status, now_text()),
+        (student_id, node_id, normalized_status, now_text()),
     )
     conn.commit()
 
@@ -206,8 +328,7 @@ def ensure_node_statuses(
         node_id = str(node["id"])
         if node_id in existing:
             continue
-        initial_status = "available" if not node.get("prerequisites") else "locked"
-        set_node_status(conn, student_id, node_id, initial_status)
+        set_node_status(conn, student_id, node_id, STATUS_NOT_STARTED)
 
 
 def log_event(

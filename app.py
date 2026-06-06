@@ -6,19 +6,15 @@ from typing import Any, Optional
 import pandas as pd
 import streamlit as st
 
+from src import assessment as asm
 from src import content
 from src import database as db
+from src import knowledge_graph as kg
 
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "skilltree_finance.sqlite3"
-
-STATUS_LABELS = {
-    "locked": "未解锁",
-    "available": "可学习",
-    "completed": "已完成",
-}
 
 PHASE_LABELS = {
     "pretest": "前测",
@@ -35,7 +31,7 @@ def get_connection() -> Any:
 
 @st.cache_data
 def get_nodes() -> list[dict[str, Any]]:
-    return content.load_knowledge_graph(DATA_DIR / "knowledge_graph.yaml")
+    return kg.load_knowledge_graph(DATA_DIR / "knowledge_graph.yaml")
 
 
 @st.cache_data
@@ -43,35 +39,23 @@ def get_questions() -> dict[str, list[dict[str, Any]]]:
     return content.load_questions(DATA_DIR / "questions.yaml")
 
 
-def apply_unlock_rules(
+def get_statuses(
     conn: Any,
-    student_id: int,
+    student_id: Optional[int],
     nodes: list[dict[str, Any]],
 ) -> dict[str, str]:
+    if student_id is None:
+        return kg.default_statuses(nodes)
+
     db.ensure_node_statuses(conn, student_id, nodes)
-    statuses = db.get_node_statuses(conn, student_id)
-    completed = {
-        node_id for node_id, status in statuses.items() if status == "completed"
+    stored_statuses = db.get_node_statuses(conn, student_id)
+    return {
+        node["id"]: kg.normalize_status(stored_statuses.get(node["id"]))
+        for node in nodes
     }
 
-    for node in nodes:
-        node_id = str(node["id"])
-        if statuses.get(node_id) == "completed":
-            continue
 
-        prerequisites = node.get("prerequisites", [])
-        next_status = (
-            "available"
-            if all(prerequisite in completed for prerequisite in prerequisites)
-            else "locked"
-        )
-        if statuses.get(node_id) != next_status:
-            db.set_node_status(conn, student_id, node_id, next_status)
-
-    return db.get_node_statuses(conn, student_id)
-
-
-def register_student_sidebar(conn: Any) -> int | None:
+def register_student_sidebar(conn: Any) -> Optional[int]:
     st.sidebar.header("学生信息")
 
     current_id = st.session_state.get("student_id")
@@ -109,19 +93,28 @@ def register_student_sidebar(conn: Any) -> int | None:
 
 
 def option_labels(question: dict[str, Any]) -> list[str]:
-    return [
-        f"{option_key}. {option_text}"
-        for option_key, option_text in question["options"].items()
-    ]
+    return asm.option_labels(question)
 
 
 def selected_key(label: str) -> str:
-    return label.split(".", 1)[0]
+    return asm.selected_key(label)
+
+
+def format_score(value: float) -> str:
+    return str(int(value)) if float(value).is_integer() else f"{value:.1f}"
 
 
 def score_summary(answers: list[Any], total: int) -> tuple[int, str]:
-    score = sum(int(row["is_correct"]) for row in answers)
-    return score, f"{score} / {total}"
+    results = asm.results_from_answer_rows(answers)
+    summary = asm.summarize_results(results)
+    score = int(summary["total_score"])
+    score_text = (
+        f"{format_score(summary['total_score'])} / "
+        f"{format_score(summary['max_score'] or float(total))}"
+    )
+    if summary["pending_manual"]:
+        score_text += f"（{int(summary['pending_manual'])} 题待人工评分）"
+    return score, score_text
 
 
 def answer_review_dataframe(
@@ -136,15 +129,26 @@ def answer_review_dataframe(
         if not answer:
             continue
 
-        selected = answer["selected_answer"]
-        correct = answer["correct_answer"]
+        selected = asm.row_value(answer, "selected_answer", "")
+        correct = asm.row_value(answer, "correct_answer", "")
+        needs_manual_grading = bool(asm.row_value(answer, "needs_manual_grading", 0))
+        score = float(asm.row_value(answer, "score", int(answer["is_correct"])))
+        max_score = float(asm.row_value(answer, "max_score", 1))
+        options = question.get("options", {})
         rows.append(
             {
                 "题号": question["id"],
                 "题目": question["question"],
-                "你的答案": f"{selected}. {question['options'][selected]}",
-                "正确答案": f"{correct}. {question['options'][correct]}",
-                "结果": "正确" if answer["is_correct"] else "错误",
+                "你的答案": asm.format_answer(selected, options),
+                "参考答案": asm.format_answer(correct, options),
+                "得分": f"{format_score(score)} / {format_score(max_score)}",
+                "结果": (
+                    "待人工评分"
+                    if needs_manual_grading
+                    else "正确"
+                    if answer["is_correct"]
+                    else "错误"
+                ),
             }
         )
 
@@ -163,43 +167,66 @@ def render_quiz(
 
     latest_answers = db.get_latest_answers(conn, student_id, phase)
     if latest_answers:
-        score, score_text = score_summary(latest_answers, len(questions))
+        _, score_text = score_summary(latest_answers, len(questions))
         st.info(f"最近一次{label}成绩：{score_text}")
 
     with st.form(f"{phase}_form"):
-        selections: dict[str, Optional[str]] = {}
+        selections: dict[str, Any] = {}
         for index, question in enumerate(questions, start=1):
             st.markdown(f"**{index}. {question['question']}**")
-            selections[question["id"]] = st.radio(
-                "选择答案",
-                option_labels(question),
-                index=None,
-                key=f"{phase}_{question['id']}",
-                label_visibility="collapsed",
-            )
+            q_type = asm.question_type(question)
+            if q_type == asm.QUESTION_SINGLE:
+                selections[question["id"]] = st.radio(
+                    "选择答案",
+                    option_labels(question),
+                    index=None,
+                    key=f"{phase}_{question['id']}",
+                    label_visibility="collapsed",
+                )
+            elif q_type == asm.QUESTION_MULTIPLE:
+                selections[question["id"]] = st.multiselect(
+                    "选择答案",
+                    option_labels(question),
+                    key=f"{phase}_{question['id']}",
+                    label_visibility="collapsed",
+                )
+            elif q_type == asm.QUESTION_SHORT:
+                selections[question["id"]] = st.text_area(
+                    "填写答案",
+                    key=f"{phase}_{question['id']}",
+                    label_visibility="collapsed",
+                )
+            else:
+                st.error(f"不支持的题型：{q_type}")
+                selections[question["id"]] = None
 
         submitted = st.form_submit_button(f"提交{label}")
 
     if submitted:
-        missing = [
-            question["id"]
-            for question in questions
-            if selections.get(question["id"]) is None
-        ]
+        missing = []
+        for question in questions:
+            value = selections.get(question["id"])
+            if value is None or value == [] or (isinstance(value, str) and not value.strip()):
+                missing.append(question["id"])
         if missing:
             st.warning("还有题目未作答，请完成所有题目后再提交。")
             return
 
+        results = []
         for question in questions:
-            selected = selected_key(str(selections[question["id"]]))
-            db.save_answer(
-                conn,
-                student_id,
-                phase,
-                question["id"],
-                selected,
-                question["answer"],
-            )
+            value = selections[question["id"]]
+            if asm.question_type(question) == asm.QUESTION_SINGLE:
+                value = selected_key(str(value))
+            elif asm.question_type(question) == asm.QUESTION_MULTIPLE:
+                value = [selected_key(str(item)) for item in value]
+
+            result = asm.grade_question(question, value)
+            results.append(result)
+            db.save_answer_result(conn, student_id, phase, result)
+
+        if phase == "pretest":
+            for node_id in asm.weak_node_ids(results):
+                db.set_node_status(conn, student_id, node_id, kg.STATUS_WEAK)
 
         db.log_event(conn, student_id, f"{phase}_submitted", detail=f"提交{label}")
         st.success(f"{label}已提交。")
@@ -213,104 +240,169 @@ def render_quiz(
 
 
 def node_label(node: dict[str, Any], statuses: dict[str, str]) -> str:
-    status = STATUS_LABELS.get(statuses.get(str(node["id"]), "locked"), "未解锁")
+    status = kg.status_label(statuses.get(node["id"]))
     return f"L{node['level']} | {status} | {node['title']}"
+
+
+def prerequisite_text(node: dict[str, Any], node_map: dict[str, dict[str, Any]]) -> str:
+    titles = [
+        node_map[item]["title"]
+        for item in node.get("prerequisites", [])
+        if item in node_map
+    ]
+    return "、".join(titles) if titles else "无"
+
+
+def render_status_metrics(statuses: dict[str, str]) -> None:
+    counts = {status: 0 for status in kg.STATUS_VALUES}
+    for status in statuses.values():
+        counts[kg.normalize_status(status)] += 1
+
+    columns = st.columns(len(kg.STATUS_VALUES))
+    for column, status in zip(columns, kg.STATUS_VALUES):
+        column.metric(kg.STATUS_LABELS[status], counts[status])
+
+
+def render_level_cards(
+    grouped_nodes: dict[int, list[dict[str, Any]]],
+    statuses: dict[str, str],
+    node_map: dict[str, dict[str, Any]],
+) -> None:
+    for level, level_nodes in grouped_nodes.items():
+        st.markdown(f"#### 第 {level} 层")
+        columns = st.columns(min(3, len(level_nodes)))
+        for index, node in enumerate(level_nodes):
+            with columns[index % len(columns)]:
+                with st.container(border=True):
+                    st.markdown(f"**{node['title']}**")
+                    st.caption(f"状态：{kg.status_label(statuses.get(node['id']))}")
+                    st.write(node["learning_objective"])
+                    st.caption(f"前置节点：{prerequisite_text(node, node_map)}")
+
+
+def render_dict_or_text_item(item: Any) -> None:
+    if isinstance(item, dict):
+        if "misconception" in item or "correction" in item:
+            st.write(f"- 误区：{item.get('misconception', '')}")
+            st.caption(f"纠正：{item.get('correction', '')}")
+            return
+        if "prompt" in item or "answer" in item:
+            st.write(f"- 练习：{item.get('prompt', '')}")
+            st.caption(f"参考答案：{item.get('answer', '')}")
+            return
+        if "question" in item or "answer" in item:
+            st.write(f"- 问题：{item.get('question', '')}")
+            st.caption(f"参考答案：{item.get('answer', '')}")
+            return
+    st.write(f"- {item}")
+
+
+def render_node_detail(
+    conn: Any,
+    student_id: Optional[int],
+    node: dict[str, Any],
+    node_map: dict[str, dict[str, Any]],
+    current_status: str,
+) -> None:
+    st.markdown(f"### {node['title']}")
+    st.caption(
+        f"层级：{node['level']} | 当前状态：{kg.status_label(current_status)} | "
+        f"前置节点：{prerequisite_text(node, node_map)}"
+    )
+
+    st.markdown("**学习目标**")
+    st.write(node["learning_objective"])
+
+    st.markdown("**知识解释**")
+    st.write(node["explanation"])
+
+    with st.expander("常见误区", expanded=True):
+        for item in node["common_misconceptions"]:
+            render_dict_or_text_item(item)
+
+    with st.expander("练习", expanded=False):
+        for item in node["exercises"]:
+            render_dict_or_text_item(item)
+
+    with st.expander("掌握度问题", expanded=False):
+        for item in node["mastery_questions"]:
+            render_dict_or_text_item(item)
+
+    st.divider()
+    if student_id is None:
+        st.info("当前没有学生记录，所有节点默认显示为“未学习”。如需保存节点状态，请先在左侧登记学生信息。")
+        return
+
+    labels = list(kg.STATUS_LABELS.values())
+    current_label = kg.status_label(current_status)
+    selected_label = st.selectbox(
+        "更新节点状态",
+        labels,
+        index=labels.index(current_label),
+        key=f"status_{node['id']}",
+    )
+    note = st.text_area("学习备注（可选）", key=f"note_{node['id']}")
+
+    if st.button("保存节点状态", type="primary"):
+        new_status = kg.LABEL_TO_STATUS[selected_label]
+        db.set_node_status(conn, student_id, node["id"], new_status)
+        db.log_event(
+            conn,
+            student_id,
+            "node_status_updated",
+            node_id=node["id"],
+            detail=f"{node['title']} -> {selected_label}; {note.strip()}",
+        )
+        st.success("节点状态已保存。")
+        st.rerun()
 
 
 def render_skill_tree(
     conn: Any,
-    student_id: int,
+    student_id: Optional[int],
     nodes: list[dict[str, Any]],
 ) -> None:
-    st.subheader("技能树学习")
-    statuses = apply_unlock_rules(conn, student_id, nodes)
-    node_map = {str(node["id"]): node for node in nodes}
+    st.subheader("知识图谱 / 技能树")
+    st.write("节点按层级展示。每个节点状态从 SQLite 读取；未选择学生时，默认全部为“未学习”。")
 
-    completed_count = sum(
-        1 for node in nodes if statuses.get(str(node["id"])) == "completed"
+    statuses = get_statuses(conn, student_id, nodes)
+    node_map = {node["id"]: node for node in nodes}
+    grouped_nodes = kg.group_nodes_by_level(nodes)
+
+    render_status_metrics(statuses)
+
+    mastered_count = sum(
+        1 for status in statuses.values() if kg.normalize_status(status) == kg.STATUS_MASTERED
     )
-    st.progress(completed_count / len(nodes), text=f"完成进度：{completed_count} / {len(nodes)}")
+    st.progress(mastered_count / len(nodes), text=f"已掌握进度：{mastered_count} / {len(nodes)}")
 
     overview_rows = []
     for node in nodes:
-        prerequisites = node.get("prerequisites", [])
         overview_rows.append(
             {
                 "层级": node["level"],
                 "节点": node["title"],
-                "报表/主题": node["statement"],
-                "状态": STATUS_LABELS.get(statuses.get(str(node["id"]), "locked")),
-                "前置节点": "、".join(
-                    node_map[item]["title"] for item in prerequisites if item in node_map
-                )
-                or "无",
+                "状态": kg.status_label(statuses.get(node["id"])),
+                "前置节点": prerequisite_text(node, node_map),
+                "学习目标": node["learning_objective"],
             }
         )
 
     st.dataframe(pd.DataFrame(overview_rows), hide_index=True, use_container_width=True)
+    render_level_cards(grouped_nodes, statuses, node_map)
 
     selected_node_id = st.selectbox(
-        "选择学习节点",
-        [str(node["id"]) for node in nodes],
+        "查看节点详情",
+        [node["id"] for node in nodes],
         format_func=lambda node_id: node_label(node_map[node_id], statuses),
     )
-    selected_node = node_map[selected_node_id]
-    selected_status = statuses.get(selected_node_id, "locked")
-
-    st.markdown(f"### {selected_node['title']}")
-    st.caption(f"主题：{selected_node['statement']} | 状态：{STATUS_LABELS[selected_status]}")
-
-    if selected_status == "locked":
-        prerequisite_titles = [
-            node_map[item]["title"]
-            for item in selected_node.get("prerequisites", [])
-            if item in node_map
-        ]
-        st.warning("该节点尚未解锁。请先完成前置节点：" + "、".join(prerequisite_titles))
-        return
-
-    st.write(selected_node["summary"])
-    st.markdown("**学习目标**")
-    for goal in selected_node.get("learning_goals", []):
-        st.write(f"- {goal}")
-
-    st.info(f"例子：{selected_node['example']}")
-
-    check = selected_node.get("check_question", {})
-    if check:
-        with st.expander("自检问题"):
-            st.write(check.get("question", ""))
-            st.caption(f"参考答案：{check.get('answer', '')}")
-
-    left, right = st.columns([1, 2])
-    with left:
-        if selected_status == "completed":
-            st.success("该节点已完成。")
-        elif st.button("标记为已学完", type="primary"):
-            db.set_node_status(conn, student_id, selected_node_id, "completed")
-            db.log_event(
-                conn,
-                student_id,
-                "node_completed",
-                node_id=selected_node_id,
-                detail=selected_node["title"],
-            )
-            st.rerun()
-
-    with right:
-        note = st.text_area("学习笔记（可选）", key=f"note_{selected_node_id}")
-        if st.button("保存学习笔记"):
-            if not note.strip():
-                st.warning("学习笔记为空，未保存。")
-            else:
-                db.log_event(
-                    conn,
-                    student_id,
-                    "note_saved",
-                    node_id=selected_node_id,
-                    detail=note.strip(),
-                )
-                st.success("学习笔记已保存。")
+    render_node_detail(
+        conn,
+        student_id,
+        node_map[selected_node_id],
+        node_map,
+        statuses.get(selected_node_id, kg.STATUS_NOT_STARTED),
+    )
 
 
 def report_metric_columns(
@@ -318,7 +410,7 @@ def report_metric_columns(
     post_answers: list[Any],
     pre_total: int,
     post_total: int,
-    completed_count: int,
+    mastered_count: int,
     node_total: int,
 ) -> None:
     pre_score, pre_text = score_summary(pre_answers, pre_total) if pre_answers else (0, "未完成")
@@ -332,7 +424,7 @@ def report_metric_columns(
     col1, col2, col3 = st.columns(3)
     col1.metric("前测", pre_text)
     col2.metric("后测", post_text, delta=delta_text)
-    col3.metric("技能节点", f"{completed_count} / {node_total}")
+    col3.metric("已掌握节点", f"{mastered_count} / {node_total}")
 
 
 def render_report(
@@ -351,11 +443,11 @@ def render_report(
             f"班级：{student['class_name'] or '-'}"
         )
 
-    statuses = apply_unlock_rules(conn, student_id, nodes)
+    statuses = get_statuses(conn, student_id, nodes)
     pre_answers = db.get_latest_answers(conn, student_id, "pretest")
     post_answers = db.get_latest_answers(conn, student_id, "posttest")
-    completed_count = sum(
-        1 for node in nodes if statuses.get(str(node["id"])) == "completed"
+    mastered_count = sum(
+        1 for status in statuses.values() if kg.normalize_status(status) == kg.STATUS_MASTERED
     )
 
     report_metric_columns(
@@ -363,7 +455,7 @@ def render_report(
         post_answers,
         len(questions["pretest"]),
         len(questions["posttest"]),
-        completed_count,
+        mastered_count,
         len(nodes),
     )
 
@@ -373,8 +465,8 @@ def render_report(
             {
                 "层级": node["level"],
                 "节点": node["title"],
-                "主题": node["statement"],
-                "状态": STATUS_LABELS.get(statuses.get(str(node["id"]), "locked")),
+                "状态": kg.status_label(statuses.get(node["id"])),
+                "学习目标": node["learning_objective"],
             }
             for node in nodes
         ]
@@ -417,6 +509,10 @@ def render_report(
     )
 
 
+def require_student_message(action: str) -> None:
+    st.info(f"请先在左侧填写学生信息并进入实验，然后再进行{action}。")
+
+
 def main() -> None:
     st.set_page_config(
         page_title="SkillTree Finance",
@@ -430,25 +526,30 @@ def main() -> None:
     questions = get_questions()
     student_id = register_student_sidebar(conn)
 
-    if not student_id:
-        st.info("请先在左侧填写学生信息并进入实验。")
-        return
-
     tab_pretest, tab_tree, tab_posttest, tab_report = st.tabs(
-        ["前测", "技能树学习", "后测", "学习报告"]
+        ["前测", "知识图谱", "后测", "学习报告"]
     )
 
     with tab_pretest:
-        render_quiz(conn, student_id, "pretest", questions["pretest"])
+        if student_id is None:
+            require_student_message("前测")
+        else:
+            render_quiz(conn, student_id, "pretest", questions["pretest"])
 
     with tab_tree:
         render_skill_tree(conn, student_id, nodes)
 
     with tab_posttest:
-        render_quiz(conn, student_id, "posttest", questions["posttest"])
+        if student_id is None:
+            require_student_message("后测")
+        else:
+            render_quiz(conn, student_id, "posttest", questions["posttest"])
 
     with tab_report:
-        render_report(conn, student_id, nodes, questions)
+        if student_id is None:
+            require_student_message("学习报告查看")
+        else:
+            render_report(conn, student_id, nodes, questions)
 
 
 if __name__ == "__main__":
