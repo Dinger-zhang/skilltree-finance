@@ -107,6 +107,36 @@ skilltree-finance/
 - 掌握验证题答对时，将节点状态写为“已掌握”
 - 掌握验证题答错时，调用 `src/diagnosis.py` 生成错误类型和推荐回退节点，并将节点状态写为“薄弱”
 
+## 诊断模块
+
+`src/diagnosis.py` 第一版使用本地规则系统，不调用大模型。核心函数：
+
+```python
+diagnose_answer(question_id, student_answer, correct_answer, question_meta)
+```
+
+返回字段：
+- `is_correct`：是否正确
+- `error_type`：错误类型
+- `explanation`：诊断解释
+- `weak_node_ids`：薄弱知识节点
+- `recommended_node_ids`：推荐下一步学习节点
+
+支持的错误类型：
+- `concept_confusion`：概念混淆
+- `calculation_error`：计算错误
+- `statement_misread`：题意理解错误
+- `prerequisite_missing`：前置知识缺失
+- `profit_cashflow_confusion`：利润与现金流混淆
+- `liability_asset_confusion`：资产负债混淆
+- `ratio_formula_error`：财务比率公式错误
+
+推荐逻辑主要依据 `question_meta` 中的：
+- `node_id`
+- `error_tags`
+- `prerequisites`
+- 可选的 `recommended_node_ids`
+
 ## 开发与调试
 - 安装依赖：`pip install -r requirements.txt`
 - 本地运行：`streamlit run app.py`
@@ -125,7 +155,16 @@ skilltree-finance/
 - 如果要新增节点或调整前置关系，请编辑 `data/knowledge_graph.yaml`，并同步调整 `src/knowledge_graph.py` 中的解析/校验逻辑（如有必要）。
 
 ## 测试与质量
-- 当前为教学 MVP，未包含自动化测试用例。建议按需添加单元测试（例如针对 `src/database.py` 与 `src/assessment.py` 的核心函数）。
+- 诊断模块包含无第三方依赖的简单测试脚本：
+  ```powershell
+  conda activate skilltree
+  python tests/test_diagnosis.py
+  ```
+- 也可以直接运行模块自检：
+  ```powershell
+  python src/diagnosis.py
+  ```
+- 建议后续继续补充针对 `src/database.py` 与 `src/assessment.py` 的核心函数测试。
 
 ## 贡献
 欢迎提交 issue 或 pull request。请尽量：

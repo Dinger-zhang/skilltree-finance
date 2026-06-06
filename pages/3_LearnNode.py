@@ -207,17 +207,21 @@ def save_mastery_records(
         prompt = exercise_prompt(item)
         reference_answer = exercise_answer(item)
         student_answer = mastery_answers.get(item_id, "").strip()
-        is_correct = diagnosis.is_answer_correct(student_answer, reference_answer)
-        diagnostic = (
-            {
-                "error_type": "",
-                "suggestion": "",
-                "recommended_node_id": "",
-                "recommended_node_title": "",
-            }
-            if is_correct
-            else diagnosis.diagnose_answer(node, student_answer, reference_answer, node_map)
+        question_meta = {
+            "node_id": node["id"],
+            "question": prompt,
+            "error_tags": item.get("error_tags", []) if isinstance(item, dict) else [],
+            "prerequisites": node.get("prerequisites", []),
+        }
+        diagnostic = diagnosis.diagnose_answer(
+            item_id,
+            student_answer,
+            reference_answer,
+            question_meta,
         )
+        is_correct = bool(diagnostic["is_correct"])
+        recommended_node_ids = diagnostic.get("recommended_node_ids", [])
+        recommended_node_id = recommended_node_ids[0] if recommended_node_ids else ""
 
         record = {
             "item_id": item_id,
@@ -227,9 +231,13 @@ def save_mastery_records(
             "correct_answer": reference_answer,
             "is_correct": is_correct,
             "error_type": diagnostic["error_type"],
-            "suggestion": diagnostic.get("suggestion", ""),
-            "recommended_node_id": diagnostic.get("recommended_node_id") or "",
-            "recommended_node_title": diagnostic.get("recommended_node_title", ""),
+            "suggestion": diagnostic.get("explanation", ""),
+            "recommended_node_id": recommended_node_id,
+            "recommended_node_title": (
+                node_map[recommended_node_id]["title"]
+                if recommended_node_id in node_map
+                else ""
+            ),
         }
         records.append(record)
         db.save_node_learning_record(
