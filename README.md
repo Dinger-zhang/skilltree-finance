@@ -6,6 +6,8 @@ AI 技能树财务报表学习实验系统 —— 一个用于课堂或自学的
 
 - 基于技能树的逐步解锁学习路径（20 个节点）
 - 前测 / 后测题库与答题记录
+- 节点学习页：展示学习目标、解释、例题、误区、练习和掌握验证题
+- 答错诊断：记录错误类型并推荐回退节点
 - 本地 SQLite 数据库（不依赖外部服务）
 - 学习日志与学习报告导出查看
 
@@ -43,6 +45,8 @@ AI 技能树财务报表学习实验系统 —— 一个用于课堂或自学的
 - 学生信息登记（姓名、学号、班级）
 - 前测与后测答题（记录得分）
 - 基于前置关系的技能树（20 节点）逐步解锁学习
+- 节点学习：选择知识节点，提交练习答案，系统记录用时与诊断结果
+- 节点掌握验证：答对掌握题后自动标记为“已掌握”，答错则标记为“薄弱”
 - 学习日志（进入系统、提交测试、完成节点、保存笔记等）
 - 学习报告：前后测成绩对比、节点完成进度、答题明细、日志导出
 
@@ -54,15 +58,17 @@ skilltree-finance/
 ├── README.md
 ├── data/
 │   ├── knowledge_graph.yaml
-+│   ├── questions.yaml
+│   ├── questions.yaml
 │   └── skilltree_finance.sqlite3      # 运行后生成
 ├── pages/
-│   └── 1_Pretest.py
+│   ├── 1_Pretest.py
+│   └── 3_LearnNode.py
 └── src/
     ├── __init__.py
     ├── assessment.py
     ├── content.py
     ├── database.py
+    ├── diagnosis.py
     └── knowledge_graph.py
 ```
 
@@ -71,7 +77,10 @@ skilltree-finance/
 - `src/content.py`：解析并加载 YAML 内容（题库、知识图谱）
 - `src/database.py`：SQLite 初始化与数据读写封装
 - `src/assessment.py`：前测/后测题目逻辑与评分
+- `src/diagnosis.py`：节点掌握题错误诊断与回退节点推荐
 - `src/knowledge_graph.py`：技能树节点与前置关系处理
+- `pages/1_Pretest.py`：独立前测页面
+- `pages/3_LearnNode.py`：独立节点学习页面
 - `data/knowledge_graph.yaml`：20 个财务报表学习节点定义
 - `data/questions.yaml`：前测与后测题库
 
@@ -83,7 +92,20 @@ skilltree-finance/
   - `students`：学生信息
   - `answers`：答题记录（前测/后测）
   - `node_status`：每个节点的学习状态
+  - `node_learning_records`：节点练习、掌握验证题、答案、用时和诊断记录
   - `learning_logs`：学习行为日志
+
+## 节点学习页
+
+运行 `streamlit run app.py` 后，可以在左侧页面导航中进入 `LearnNode` 页面。
+
+该页面支持：
+- 选择任意知识节点
+- 查看学习目标、解释、例题、常见误区和练习题
+- 提交练习题和掌握验证题答案
+- 自动记录学生答案和本次学习用时
+- 掌握验证题答对时，将节点状态写为“已掌握”
+- 掌握验证题答错时，调用 `src/diagnosis.py` 生成错误类型和推荐回退节点，并将节点状态写为“薄弱”
 
 ## 开发与调试
 - 安装依赖：`pip install -r requirements.txt`
@@ -113,4 +135,3 @@ skilltree-finance/
 
 ## 许可与免责声明
 本项目用于教学与实验目的。请勿在未经许可的情况下上传包含敏感或真实个人信息的数据到公共仓库。
-

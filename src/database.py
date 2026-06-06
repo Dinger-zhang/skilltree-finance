@@ -140,11 +140,31 @@ def init_db(conn: sqlite3.Connection) -> None:
             FOREIGN KEY(student_id) REFERENCES students(id)
         );
 
+        CREATE TABLE IF NOT EXISTS node_learning_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id INTEGER NOT NULL,
+            node_id TEXT NOT NULL,
+            item_id TEXT NOT NULL,
+            item_type TEXT NOT NULL,
+            prompt TEXT NOT NULL,
+            student_answer TEXT NOT NULL,
+            correct_answer TEXT NOT NULL,
+            is_correct INTEGER NOT NULL CHECK(is_correct IN (0, 1)),
+            duration_seconds INTEGER NOT NULL,
+            error_type TEXT,
+            recommended_node_id TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY(student_id) REFERENCES students(id)
+        );
+
         CREATE INDEX IF NOT EXISTS idx_answers_student_phase
             ON answers(student_id, phase);
 
         CREATE INDEX IF NOT EXISTS idx_logs_student_time
             ON learning_logs(student_id, created_at);
+
+        CREATE INDEX IF NOT EXISTS idx_node_learning_student_node
+            ON node_learning_records(student_id, node_id);
         """
     )
     ensure_answers_table_columns(conn)
@@ -358,5 +378,67 @@ def get_learning_logs(conn: sqlite3.Connection, student_id: int) -> list[sqlite3
         LIMIT 100
         """,
         (student_id,),
+    ).fetchall()
+    return list(rows)
+
+
+def save_node_learning_record(
+    conn: sqlite3.Connection,
+    student_id: int,
+    node_id: str,
+    item_id: str,
+    item_type: str,
+    prompt: str,
+    student_answer: str,
+    correct_answer: str,
+    is_correct: bool,
+    duration_seconds: int,
+    error_type: str = "",
+    recommended_node_id: str = "",
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO node_learning_records(
+            student_id, node_id, item_id, item_type, prompt,
+            student_answer, correct_answer, is_correct, duration_seconds,
+            error_type, recommended_node_id, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            student_id,
+            node_id,
+            item_id,
+            item_type,
+            prompt,
+            student_answer,
+            correct_answer,
+            int(is_correct),
+            int(duration_seconds),
+            error_type,
+            recommended_node_id,
+            now_text(),
+        ),
+    )
+    conn.commit()
+
+
+def get_node_learning_records(
+    conn: sqlite3.Connection,
+    student_id: int,
+    node_id: str,
+    limit: int = 20,
+) -> list[sqlite3.Row]:
+    rows = conn.execute(
+        """
+        SELECT item_id, item_type, prompt, student_answer, correct_answer,
+               is_correct, duration_seconds, error_type, recommended_node_id,
+               created_at
+        FROM node_learning_records
+        WHERE student_id = ? AND node_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        (student_id, node_id, limit),
     ).fetchall()
     return list(rows)
