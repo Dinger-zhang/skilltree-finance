@@ -85,7 +85,10 @@ skilltree-finance/
     ├── 03_MVP_DEVELOPMENT_PLAN.md
     ├── 04_EXPERIMENT_PLAN.md
     ├── 05_BUSINESS_ROADMAP.md
-    └── 06_DECISION_LOG_AND_OPEN_QUESTIONS.md
+    ├── 06_DECISION_LOG_AND_OPEN_QUESTIONS.md
+    ├── 07_V0_2_ACCEPTANCE_REPORT.md
+    ├── 08_LLM_API_ENHANCEMENT_PLAN.md
+    └── 09_SYNTHETIC_STUDENT_LAB_PLAN.md
 ```
 
 原计划中的 `2_SkillTree.py`、`6_Admin.py`、`analysis/`、`exports/` 当前尚未实现，不应在验收时当作已有功能。
@@ -176,11 +179,15 @@ knowledge_graph.yaml 已重构为 40 个微节点
 数据完整性检查
 反馈问卷
 学习流程说明页或实验手册
+数据完整性检查
+反馈问卷
+学习流程说明页或实验手册
 知识图谱结构测试
 推理评分函数测试
 题目 node_id 映射测试
 README 与 docs 同步
 必要时弱化或隐藏旧 LearnNode 页面
+离线 Synthetic Student Lab 最小实验：只测试 1 条推理链、3 类模拟学生，不进入学生主流程
 ```
 
 验收标准：
@@ -202,6 +209,7 @@ README 与 docs 同步
 错因统计
 薄弱节点统计
 学习报告示例
+Synthetic Student Lab 扩展到 5 条推理链并输出课程质量报告
 轻量 UI 优化
 Demo 数据
 ```
@@ -396,6 +404,7 @@ git tag v0.2.1-internal-trial
 用户注册登录
 支付
 大模型深度 Agent
+后台无限自治改图谱
 全学科扩展
 K12 正式商业化
 ```
@@ -480,4 +489,125 @@ created_at
 5. API 调用失败不会阻断学生学习。
 6. 至少收集 20 条回答，比较规则评分与 LLM 评分差异。
 7. 人工复核冲突样本后，再决定是否在 v0.3 中启用正式 LLM 反馈。
+```
+
+
+## 12. Synthetic Student Lab 开发计划
+
+本模块来自新的产品设想：用几个大模型模拟学生学习过程，并长期对学习系统进行压力测试，把失败样本反馈给课程结构和推理链设计。
+
+### 12.1 当前阶段定位
+
+当前不建议把它并入 v0.2.1 主流程。v0.2.1 的最高优先级仍是：
+
+```text
+1—3 名真实用户内部试跑
+验证前后测提升
+发现真实内容跳步和评分误判
+```
+
+Synthetic Student Lab 应作为 v0.3 起的离线开发者工具，先用于内容质检，而不是面向学生的功能。
+
+### 12.2 推荐目录结构
+
+```text
+experiments/
+└── synthetic_student_lab/
+    ├── personas.yaml
+    ├── run_simulation.py
+    ├── run_adversarial_loop.py
+    ├── judge.py
+    ├── failure_analyzer.py
+    ├── graph_patch_generator.py
+    ├── regression_eval.py
+    ├── prompts/
+    │   ├── student_prompt.md
+    │   ├── adversarial_student_prompt.md
+    │   ├── judge_prompt.md
+    │   ├── failure_analyzer_prompt.md
+    │   └── graph_optimizer_prompt.md
+    └── outputs/
+        ├── simulation_runs.jsonl
+        ├── node_failure_report.md
+        ├── patch_suggestions.yaml
+        └── regression_report.md
+```
+
+### 12.3 数据记录字段
+
+```text
+run_id
+graph_version
+chain_id
+node_id
+student_persona
+student_model
+judge_model
+given_materials
+student_answer
+self_explanation
+used_node_ids
+matched_reasoning_points
+missing_reasoning_points
+judge_score
+failure_type
+suggested_fix
+external_knowledge_suspicion
+passed
+cost_tokens
+created_at
+```
+
+### 12.4 v0.3 最小实现范围
+
+```text
+1. 读取 data/knowledge_graph.yaml。
+2. 读取 experiments/synthetic_student_lab/personas.yaml。
+3. 支持至少 3 类模拟学生：零基础、死记硬背、误解型。
+4. 只跑 1 条推理链，例如“利润不等于现金流”相关链条。
+5. 每个节点生成学生回答和自我解释。
+6. 使用规则评分 + LLM judge 评估推理覆盖。
+7. 输出 node_failure_report.md。
+8. 不自动修改正式 knowledge_graph.yaml。
+```
+
+### 12.5 v0.4 扩展范围
+
+```text
+1. 扩展到 5 条核心推理链。
+2. 支持 5—8 类模拟学生画像。
+3. 输出节点质量分、推理链自然度、迁移题难度和误判样本。
+4. 生成 patch_suggestions.yaml，但仍需人工审核。
+5. 修改候选图谱后自动跑回归测试。
+```
+
+### 12.6 不允许做的事
+
+```text
+不要让模拟学生结果直接覆盖正式知识图谱。
+不要让同一个模型同时当学生、老师、裁判和优化器。
+不要只看模拟学生通过率作为课程质量指标。
+不要无成本上限地后台调用 API。
+不要用模拟结果替代真实学生实验。
+```
+
+### 12.7 验收标准
+
+最小验收：
+
+```text
+1. 能稳定跑完 1 条链 × 3 类学生画像。
+2. 能输出每个节点的失败率和缺失推理点。
+3. 能识别至少 3 类问题：节点过粗、前置缺失、验证题太浅、评分误判中的任意 3 类。
+4. 生成的修改建议以候选报告形式保存，不直接改正式数据。
+5. 人工判断至少 3 条建议具有参考价值。
+```
+
+更强验收：
+
+```text
+1. 修改候选图谱后，模拟失败率下降。
+2. 隐藏迁移题表现不下降。
+3. 真实学生试跑中至少能观察到部分模拟学生提前发现的问题。
+4. 每次有效改进的 API 成本可统计、可控制。
 ```

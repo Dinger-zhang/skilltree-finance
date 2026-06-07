@@ -369,3 +369,44 @@ API 失败不影响学习流程
 一句话：
 
 > 大模型 API 应该先成为评分和反馈的影子系统，再逐步成为用户可见的学习增强能力。
+
+
+## 11. 与 Synthetic Student Lab 的关系
+
+本轮新增的 Synthetic Student Lab 需要大模型 API 支持，但它和 LLM Shadow Evaluator 的定位不同。
+
+```text
+LLM Shadow Evaluator：评估真实学生回答，判断规则评分是否可靠。
+Synthetic Student Lab：生成模拟学生学习过程，压力测试课程结构是否合理。
+```
+
+推荐分工：
+
+```text
+student_model：低成本模型，批量模拟不同学生画像。
+judge_model：更强模型，评估学生解释是否覆盖推理要点。
+failure_analyzer_model：归因失败原因，例如前置缺失、节点过粗、验证题太浅。
+patch_reviewer_model：审查候选修改是否可能引入事实错误或回归问题。
+rule_checker：本地规则，负责 expected_reasoning_points 命中、JSON schema、成本控制和回归测试。
+```
+
+优先使用方式：
+
+```text
+v0.3：离线手动运行，只测试 1 条链。
+v0.4：扩展到 5 条核心链，生成课程质量报告。
+v0.5：每次知识图谱修改后自动运行回归测试，生成候选 PR 或 patch_suggestions.yaml。
+```
+
+安全和稳定性要求：
+
+```text
+模拟学生输出不应直接进入正式知识图谱。
+LLM 生成的修改建议必须可审计、可回滚。
+所有 API 调用必须记录 model_name、prompt_version、cost_tokens 和 raw_response。
+必须设置每日调用预算、最大轮数和失败回退。
+```
+
+该模块的底线：
+
+> 大模型可以帮助发现课程问题，但不能替代真实学生实验，也不能自动决定正式课程内容。

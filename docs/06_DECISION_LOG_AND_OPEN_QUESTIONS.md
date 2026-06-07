@@ -147,6 +147,42 @@ LLM Shadow Evaluator 优先作为影子评分模块接入，不直接改变 node
 把学生真实身份信息发送给外部 API
 ```
 
+
+
+### 决策 11：模拟学生系统作为课程质检工具，而不是自动自治改图谱工具
+
+本轮新增判断：可以用多个大模型模拟不同类型学生，让它们长期试学当前知识图谱和推理链，并把失败样本反馈给系统。
+
+但该方向的定位必须明确：
+
+```text
+它是课程质检和改进建议工具。
+不是证明大模型真的不依赖自身知识学会了财报。
+不是可以无限后台自治修改正式知识图谱的系统。
+```
+
+推荐名称：
+
+```text
+Synthetic Student Lab
+模拟学生学习实验室
+课程自博弈优化模块
+```
+
+建议采用的原则：
+
+```text
+多类模拟学生负责暴露问题
+独立 judge 负责评估推理质量
+failure analyzer 负责归因
+graph patch generator 只生成候选修改
+regression eval 负责检查副作用
+人工审核后才能合并正式图谱
+```
+
+该模块建议放入 v0.3 或 v0.4 的离线实验，不进入 v0.2.1 真实用户试跑主流程。
+
+
 ## 2. 产品哲学记录
 
 ### 核心产品哲学
@@ -339,6 +375,7 @@ LLM 辅助评分
 3. 新增推理评分函数测试。
 4. 补充反馈问卷。
 5. 整理第一次内部试用复盘报告。
+6. 设计 Synthetic Student Lab 最小离线实验：1 条推理链、3 类模拟学生、只输出问题报告。
 ```
 
 ### 暂缓
@@ -347,9 +384,10 @@ LLM 辅助评分
 1. 复杂 UI。
 2. 管理员大屏。
 3. 大模型 Agent。
-4. 商业收费。
-5. 多学科扩展。
-6. 云部署。
+4. 后台无限自治修改正式知识图谱。
+5. 商业收费。
+6. 多学科扩展。
+7. 云部署。
 ```
 
 ## 6. 下一次对话建议上传的文档
@@ -360,6 +398,7 @@ LLM 辅助评分
 01_PROJECT_CONTEXT.md
 02_PRODUCT_AND_LEARNING_DESIGN.md
 06_DECISION_LOG_AND_OPEN_QUESTIONS.md
+09_SYNTHETIC_STUDENT_LAB_PLAN.md
 ```
 
 如果继续讨论 Codex 开发：
@@ -368,6 +407,7 @@ LLM 辅助评分
 01_PROJECT_CONTEXT.md
 03_MVP_DEVELOPMENT_PLAN.md
 06_DECISION_LOG_AND_OPEN_QUESTIONS.md
+09_SYNTHETIC_STUDENT_LAB_PLAN.md
 ```
 
 如果继续讨论商业化：
@@ -376,6 +416,7 @@ LLM 辅助评分
 01_PROJECT_CONTEXT.md
 05_BUSINESS_ROADMAP.md
 06_DECISION_LOG_AND_OPEN_QUESTIONS.md
+09_SYNTHETIC_STUDENT_LAB_PLAN.md
 ```
 
 ### 问题 8：是否接入 DeepSeek 或其他大模型 API
@@ -398,4 +439,29 @@ v0.2.1：LLM Shadow Evaluator，只记录不干预
 v0.3：启用可见个性化反馈和报告总结
 v0.4：离线辅助题库扩展、节点润色和知识图谱审查
 v0.5：受控节点内 AI 助教
+```
+
+
+### 问题 9：模拟学生系统如何避免过拟合和自嗨？
+
+当前初步答案：
+
+```text
+设置无课程 baseline
+要求学生回答引用 node_id 和 rule_summary
+使用隐藏迁移题
+必要时构造虚构知识体系
+不同模型分别承担学生、judge、优化器角色
+所有修改生成候选 diff，不直接上线
+通过真实学生试跑校准模拟结果
+设置 API 成本上限和最大迭代轮数
+```
+
+仍需继续验证：
+
+```text
+哪些模拟学生画像最接近真实学生？
+LLM judge 是否比规则评分更可靠？
+模拟发现的问题是否能被真实学生试跑印证？
+候选修改是否会提高真实学习效果，而不是只提高模拟分数？
 ```

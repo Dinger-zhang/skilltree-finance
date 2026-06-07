@@ -10,7 +10,7 @@
 
 ## 2. 推荐维护的文档体系
 
-建议维护 8 个核心文档：
+建议维护 9 个核心文档：
 
 1. `01_PROJECT_CONTEXT.md`  
    项目总览文档，记录项目愿景、当前阶段、核心假设、已形成的关键结论。每次对话前最值得上传。
@@ -32,6 +32,12 @@
 
 7. `07_V0_2_ACCEPTANCE_REPORT.md`  
    v0.2 验收报告文档，记录功能验收标准、实际验收结果、验收结论、遗留问题和 v0.2.1 内部试用目标。
+
+8. `08_LLM_API_ENHANCEMENT_PLAN.md`  
+   大模型 API 增强计划文档，记录 LLM Shadow Evaluator、个性化反馈、报告总结、题目生成、图谱审查等增强方向。
+
+9. `09_SYNTHETIC_STUDENT_LAB_PLAN.md`  
+   模拟学生学习实验室文档，记录多模型模拟学生、课程压力测试、自博弈优化、后台运行门禁和验收标准。
 
 ## 3. 每次对话如何使用这些文档
 
@@ -78,6 +84,16 @@
 - `03_MVP_DEVELOPMENT_PLAN.md`
 - `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`
 - `08_LLM_API_ENHANCEMENT_PLAN.md`
+
+### 情况 G：讨论模拟学生、课程自博弈、知识图谱自动质检或后台优化
+上传：
+- `01_PROJECT_CONTEXT.md`
+- `02_PRODUCT_AND_LEARNING_DESIGN.md`
+- `03_MVP_DEVELOPMENT_PLAN.md`
+- `04_EXPERIMENT_PLAN.md`
+- `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`
+- `08_LLM_API_ENHANCEMENT_PLAN.md`
+- `09_SYNTHETIC_STUDENT_LAB_PLAN.md`
 
 ## 4. 每次对话结束后如何更新
 
