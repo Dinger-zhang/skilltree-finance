@@ -4,7 +4,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable, Union
 
-from src.content import load_yaml
+from src import graph as reasoning_graph
 
 
 PathLike = Union[str, Path]
@@ -42,17 +42,7 @@ LEGACY_STATUS_MAP = {
     "已完成": STATUS_MASTERED,
 }
 
-REQUIRED_NODE_FIELDS = (
-    "id",
-    "title",
-    "level",
-    "prerequisites",
-    "learning_objective",
-    "explanation",
-    "common_misconceptions",
-    "exercises",
-    "mastery_questions",
-)
+REQUIRED_NODE_FIELDS = reasoning_graph.REQUIRED_NODE_FIELDS
 
 
 def normalize_status(status: str | None) -> str:
@@ -69,52 +59,16 @@ def status_label(status: str | None) -> str:
     return STATUS_LABELS[normalize_status(status)]
 
 
-def to_list(value: Any) -> list[Any]:
-    if value is None:
-        return []
-    if isinstance(value, list):
-        return value
-    return [value]
-
-
 def normalize_node(raw_node: dict[str, Any]) -> dict[str, Any]:
-    missing = [field for field in REQUIRED_NODE_FIELDS if field not in raw_node]
-    if missing:
-        node_id = raw_node.get("id", "<unknown>")
-        raise ValueError(f"Knowledge node {node_id} missing fields: {', '.join(missing)}")
-
-    node = dict(raw_node)
-    node["id"] = str(node["id"])
-    node["title"] = str(node["title"])
-    node["level"] = int(node["level"])
-    node["prerequisites"] = [str(item) for item in to_list(node["prerequisites"])]
-    node["learning_objective"] = str(node["learning_objective"])
-    node["explanation"] = str(node["explanation"])
-    node["common_misconceptions"] = to_list(node["common_misconceptions"])
-    node["exercises"] = to_list(node["exercises"])
-    node["mastery_questions"] = to_list(node["mastery_questions"])
-    return node
+    return reasoning_graph.normalize_node(raw_node)
 
 
 def load_knowledge_graph(path: PathLike) -> list[dict[str, Any]]:
-    data = load_yaml(path)
-    nodes = [normalize_node(node) for node in data.get("nodes", [])]
-    validate_prerequisites(nodes)
-    return sorted(nodes, key=lambda node: (node["level"], node["id"]))
+    return reasoning_graph.load_knowledge_graph(path)
 
 
 def validate_prerequisites(nodes: Iterable[dict[str, Any]]) -> None:
-    node_list = list(nodes)
-    node_ids = {node["id"] for node in node_list}
-    errors = []
-
-    for node in node_list:
-        for prerequisite in node["prerequisites"]:
-            if prerequisite not in node_ids:
-                errors.append(f"{node['id']} -> {prerequisite}")
-
-    if errors:
-        raise ValueError("Unknown prerequisite node ids: " + ", ".join(errors))
+    reasoning_graph.validate_graph(nodes)
 
 
 def group_nodes_by_level(nodes: Iterable[dict[str, Any]]) -> dict[int, list[dict[str, Any]]]:
@@ -123,7 +77,7 @@ def group_nodes_by_level(nodes: Iterable[dict[str, Any]]) -> dict[int, list[dict
         grouped[int(node["level"])].append(node)
 
     return {
-        level: sorted(items, key=lambda item: item["id"])
+        level: sorted(items, key=lambda item: (item["chain"], item["id"]))
         for level, items in sorted(grouped.items())
     }
 
@@ -131,3 +85,26 @@ def group_nodes_by_level(nodes: Iterable[dict[str, Any]]) -> dict[int, list[dict
 def default_statuses(nodes: Iterable[dict[str, Any]]) -> dict[str, str]:
     return {node["id"]: STATUS_NOT_STARTED for node in nodes}
 
+
+def get_prerequisite_nodes(
+    nodes: Iterable[dict[str, Any]],
+    node_id: str,
+) -> list[dict[str, Any]]:
+    return reasoning_graph.get_prerequisite_nodes(nodes, node_id)
+
+
+def get_derived_nodes(
+    nodes: Iterable[dict[str, Any]],
+    node_id: str,
+) -> list[dict[str, Any]]:
+    return reasoning_graph.get_derived_nodes(nodes, node_id)
+
+
+def group_nodes_by_chain(
+    nodes: Iterable[dict[str, Any]],
+) -> dict[str, list[dict[str, Any]]]:
+    return reasoning_graph.group_nodes_by_chain(nodes)
+
+
+def chain_nodes(nodes: Iterable[dict[str, Any]], chain: str) -> list[dict[str, Any]]:
+    return reasoning_graph.chain_nodes(nodes, chain)
