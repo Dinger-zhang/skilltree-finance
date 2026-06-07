@@ -1,960 +1,395 @@
 nodes:
-  - id: resource_controlled_by_company
-    title: "企业控制的资源"
-    layer: 1
-    chain: "A. 从资源到资产负债表"
-    type: "concept"
+  - id: financial_statement_overview
+    title: 财务报表三件套
+    level: 1
     prerequisites: []
-    derives: [future_economic_benefit]
-    contrasts: ["机会", "愿望", "已经失去控制的物品"]
-    core_question: "什么样的东西先有资格被讨论为企业资源？"
-    scenario: "一家咖啡店拥有咖啡机、库存咖啡豆，也租用门店并雇佣员工。不是所有和经营有关的东西都属于企业可控制资源。"
-    guiding_questions:
-      - "咖啡机为什么比员工个人技能更容易被记录为企业资源？"
-      - "租来的门店是否一定是企业资产，关键要看什么？"
-      - "如果企业已经不能支配某项物品，它还能支持资产判断吗？"
-    rule_summary: "资源判断先看企业是否能够控制或支配相关经济利益，而不是只看它是否对经营有帮助。"
+    learning_objective: 理解资产负债表、利润表和现金流量表分别回答什么问题。
+    explanation: 财务报表三件套是学习企业财务信息的入口。资产负债表展示某一时点企业拥有什么和欠什么，利润表展示一段期间赚了多少钱，现金流量表展示现金如何流入和流出。
     common_misconceptions:
-      - "只要对经营有用就一定是资产。"
-      - "企业想获得的资源也可以现在记入资产。"
-    mastery_question: "请说明为什么资产判断要先看企业是否控制资源。"
-    expected_reasoning_points:
-      - "资源"
-      - "控制"
-      - "经济利益"
-
-  - id: future_economic_benefit
-    title: "未来经济利益"
-    layer: 2
-    chain: "A. 从资源到资产负债表"
-    type: "inference"
-    prerequisites: [resource_controlled_by_company]
-    derives: [balance_sheet_assets]
-    contrasts: ["沉没成本", "无收益物品"]
-    core_question: "被控制的资源为什么还必须能带来未来经济利益？"
-    scenario: "咖啡机如果仍能制作咖啡并带来销售收入，就有未来经济利益；如果完全报废且无残值，就很难继续作为资产。"
-    guiding_questions:
-      - "未来经济利益可以来自收入、节约成本还是可出售价值？"
-      - "已经报废的机器为什么不能只因为曾经花钱购买就继续当资产？"
-      - "未来二字提醒我们关注什么时间方向？"
-    rule_summary: "资产不是历史花费本身，而是企业控制并预期能带来未来经济利益的资源。"
-    common_misconceptions:
-      - "花过钱买来的东西永远都是资产。"
-      - "只有直接产生收入才算未来经济利益。"
-    mastery_question: "请用咖啡机例子解释未来经济利益如何支持资产判断。"
-    expected_reasoning_points:
-      - "未来"
-      - "经济利益"
-      - "不是历史花费"
-
-  - id: balance_sheet_assets
-    title: "资产识别"
-    layer: 3
-    chain: "A. 从资源到资产负债表"
-    type: "rule"
-    prerequisites: [future_economic_benefit]
-    derives: [asset_classification_current_noncurrent]
-    contrasts: [balance_sheet_liabilities_equity, "费用"]
-    core_question: "什么时候可以把资源识别为资产？"
-    scenario: "企业购买一批咖啡豆，已经验收入库，未来会用于销售咖啡。它不是当期全部费用，而是先形成存货资产。"
-    guiding_questions:
-      - "咖啡豆为什么满足资产定义？"
-      - "如果咖啡豆已经消耗掉，资产和费用之间会发生什么变化？"
-      - "资产识别和现金是否已经支付是同一个问题吗？"
-    rule_summary: "资产识别通常需要同时满足控制、未来经济利益和金额可可靠计量；资产后续可能随消耗转为费用。"
-    common_misconceptions:
-      - "付现金购买就一定立即形成费用。"
-      - "资产只包括现金和设备。"
-    mastery_question: "请判断库存咖啡豆为什么通常先进入资产负债表。"
-    expected_reasoning_points:
-      - "控制"
-      - "未来经济利益"
-      - "存货资产"
-
-  - id: asset_classification_current_noncurrent
-    title: "流动与非流动资产"
-    layer: 4
-    chain: "A. 从资源到资产负债表"
-    type: "classification"
-    prerequisites: [balance_sheet_assets]
-    derives: [balance_sheet_liabilities_equity]
-    contrasts: ["短期变现", "长期使用"]
-    core_question: "识别资产后，为什么还要区分流动资产和非流动资产？"
-    scenario: "咖啡豆预计一个月内卖出，咖啡机预计使用五年。二者都是资产，但对短期偿债和长期经营的含义不同。"
-    guiding_questions:
-      - "咖啡豆和咖啡机的变现或使用周期有什么差别？"
-      - "短期偿债分析为什么更关心流动资产？"
-      - "长期设备为什么不能简单当作马上可用现金？"
-    rule_summary: "流动资产通常预计在一年或一个经营周期内变现、出售或耗用；非流动资产服务于较长期经营。"
-    common_misconceptions:
-      - "所有资产都能马上变成现金。"
-      - "设备价值高就一定能解决短期付款压力。"
-    mastery_question: "请解释为什么咖啡豆通常是流动资产，而咖啡机通常是非流动资产。"
-    expected_reasoning_points:
-      - "流动资产"
-      - "非流动资产"
-      - "变现周期"
-
-  - id: balance_sheet_liabilities_equity
-    title: "资金来源：负债与权益"
-    layer: 5
-    chain: "A. 从资源到资产负债表"
-    type: "contrast"
-    prerequisites: [asset_classification_current_noncurrent]
-    derives: [equity_residual_after_liabilities]
-    contrasts: [balance_sheet_assets, "收入"]
-    core_question: "资产从哪里来，为什么要区分负债和所有者权益？"
-    scenario: "咖啡店的设备可能由银行贷款购买，也可能由股东投入资金购买。设备相同，但资金来源不同。"
-    guiding_questions:
-      - "银行贷款为什么是未来要偿还的义务？"
-      - "股东投入为什么不是普通债务？"
-      - "同一项资产能否由不同来源共同支持？"
-    rule_summary: "负债代表企业对外部债权人的现时义务；所有者权益代表扣除负债后归属于所有者的剩余权益。"
-    common_misconceptions:
-      - "负债一定坏，权益一定好。"
-      - "股东投入的钱必须一直以现金形式存在。"
-    mastery_question: "请说明银行贷款购买设备会同时影响资产和哪一类资金来源。"
-    expected_reasoning_points:
-      - "负债"
-      - "资金来源"
-      - "未来偿还"
-
-  - id: equity_residual_after_liabilities
-    title: "权益是剩余索取权"
-    layer: 6
-    chain: "A. 从资源到资产负债表"
-    type: "inference"
-    prerequisites: [balance_sheet_liabilities_equity]
-    derives: [accounting_equation]
-    contrasts: ["现金余额", "借款本金"]
-    core_question: "为什么所有者权益不是账上现金，而是剩余权益？"
-    scenario: "咖啡店资产 100 万，欠银行 40 万。股东并不是拥有 100 万现金，而是拥有扣除负债后的 60 万净权益。"
-    guiding_questions:
-      - "债权人和股东谁先对资产有偿付要求？"
-      - "为什么权益要在资产扣除负债后计算？"
-      - "权益增加是否一定表示现金增加？"
-    rule_summary: "所有者权益是资产扣除负债后的剩余部分，体现股东对企业净资产的要求权。"
-    common_misconceptions:
-      - "所有者权益就是公司银行账户余额。"
-      - "权益越高就表示现金越多。"
-    mastery_question: "资产 100 万、负债 40 万时，为什么所有者权益是 60 万？"
-    expected_reasoning_points:
-      - "资产减负债"
-      - "剩余权益"
-      - "不是现金"
+      - misconception: 只看利润表就能判断企业好坏。
+        correction: 利润、资产质量和现金流需要一起看，单看利润容易忽略回款和负债风险。
+      - misconception: 三张报表彼此独立。
+        correction: 三张表存在勾稽关系，例如净利润会影响权益，现金变化会连接资产负债表。
+    exercises:
+      - prompt: 请用一句话说明资产负债表回答的问题。
+        answer: 企业在某一时点拥有什么资源、承担什么债务，以及股东拥有多少权益。
+    mastery_questions:
+      - question: 哪张报表主要展示企业某一期间是否赚钱？
+        answer: 利润表。
 
   - id: accounting_equation
-    title: "会计恒等式"
-    layer: 7
-    chain: "A. 从资源到资产负债表"
-    type: "rule"
-    prerequisites: [equity_residual_after_liabilities]
-    derives: [balance_sheet_snapshot]
-    contrasts: ["单边记录", "只看资产规模"]
-    core_question: "为什么资产必须等于负债加所有者权益？"
-    scenario: "咖啡店资产 100 万，其中 40 万来自贷款，60 万来自股东净权益。资产总额必须能被资金来源解释。"
-    guiding_questions:
-      - "资产左边说明什么，负债和权益右边说明什么？"
-      - "如果资产增加但来源没有变化，报表为什么不平衡？"
-      - "这条恒等式能帮助检查什么错误？"
-    rule_summary: "资产 = 负债 + 所有者权益。资产展示资源占用，负债和权益展示资源来源，两边必须平衡。"
+    title: 会计恒等式
+    level: 1
+    prerequisites:
+      - financial_statement_overview
+    learning_objective: 掌握资产 = 负债 + 所有者权益，并能用它检查资产负债表是否平衡。
+    explanation: 会计恒等式说明企业资产的来源要么来自债权人，要么来自所有者。资产负债表中的左右两边必须保持平衡。
     common_misconceptions:
-      - "资产越多，公司一定越安全。"
-      - "恒等式只是数学公式，不影响业务理解。"
-    mastery_question: "请用资金占用和资金来源解释会计恒等式。"
-    expected_reasoning_points:
-      - "资产"
-      - "负债"
-      - "所有者权益"
+      - misconception: 资产越多，企业一定越安全。
+        correction: 资产可能来自大量负债，也可能质量较差，需要结合负债和现金流判断。
+      - misconception: 所有者权益等同于企业账上的现金。
+        correction: 所有者权益是净资产概念，不等于现金余额。
+    exercises:
+      - prompt: 公司资产 100 万，负债 35 万，所有者权益是多少？
+        answer: 65 万。
+    mastery_questions:
+      - question: 如果资产增加 10 万且负债不变，所有者权益会怎样变化？
+        answer: 所有者权益增加 10 万。
 
-  - id: balance_sheet_snapshot
-    title: "资产负债表是时点快照"
-    layer: 8
-    chain: "A. 从资源到资产负债表"
-    type: "synthesis"
-    prerequisites: [accounting_equation]
-    derives: []
-    contrasts: [net_profit, cash_flow_overview]
-    core_question: "为什么资产负债表回答的是某一时点的财务状况？"
-    scenario: "6 月 30 日咖啡店有多少现金、存货、设备、贷款和权益，是一个时点状态；7 月销售发生后状态会改变。"
-    guiding_questions:
-      - "资产负债表和一段期间的赚钱过程有什么区别？"
-      - "为什么报表日期对资产负债表很重要？"
-      - "时点快照能否单独说明企业本月赚了多少钱？"
-    rule_summary: "资产负债表在特定日期呈现资产、负债和权益结构，回答企业拥有什么、欠什么、净剩多少。"
+  - id: balance_sheet_assets
+    title: 资产：企业拥有或控制的资源
+    level: 2
+    prerequisites:
+      - accounting_equation
+    learning_objective: 能识别常见资产项目，并区分流动资产和非流动资产。
+    explanation: 资产是企业拥有或控制并预期带来经济利益的资源。常见资产包括货币资金、应收账款、存货、固定资产和无形资产。
     common_misconceptions:
-      - "资产负债表能直接显示本月利润。"
-      - "期末资产状态等同于整个期间的经营过程。"
-    mastery_question: "请说明资产负债表为什么是时点报表，而不是期间报表。"
-    expected_reasoning_points:
-      - "时点"
-      - "资产负债权益"
-      - "不是期间利润"
+      - misconception: 所有资产都能马上变成现金。
+        correction: 存货、固定资产等资产变现速度和变现金额存在不确定性。
+      - misconception: 应收账款越多越好。
+        correction: 应收账款过高可能表示回款慢或坏账风险上升。
+    exercises:
+      - prompt: 判断“客户尚未支付的货款”通常属于哪个资产项目。
+        answer: 应收账款。
+    mastery_questions:
+      - question: 机器设备通常属于流动资产还是非流动资产？
+        answer: 非流动资产。
 
-  - id: transaction_scope_for_income_statement
-    title: "交易进入利润表的边界"
-    layer: 1
-    chain: "B. 从交易到利润表"
-    type: "concept"
-    prerequisites: []
-    derives: [income_statement_revenue]
-    contrasts: ["借款", "股东出资", "购买长期资产"]
-    core_question: "哪些交易会影响利润表，哪些只是改变资产负债表？"
-    scenario: "咖啡店卖出咖啡、支付工资、向银行借款、购买设备。它们都会影响财务数据，但不都进入利润表。"
-    guiding_questions:
-      - "销售咖啡为什么通常影响利润表？"
-      - "银行借款为什么不是收入？"
-      - "购买设备为什么通常先形成资产，而不是一次性全部进费用？"
-    rule_summary: "利润表关注一段期间内经营形成的收入、成本、费用和利润；融资和部分资产购置不直接等同于收入费用。"
+  - id: balance_sheet_liabilities_equity
+    title: 负债与所有者权益
+    level: 2
+    prerequisites:
+      - accounting_equation
+    learning_objective: 区分企业资金来源中的债权人资金和股东资金。
+    explanation: 负债是企业未来需要偿还的义务，所有者权益是股东对企业净资产的剩余权益。两者共同解释资产的资金来源。
     common_misconceptions:
-      - "所有现金流入都是收入。"
-      - "所有现金流出都是费用。"
-    mastery_question: "请区分销售咖啡和银行借款为什么只有前者通常进入收入。"
-    expected_reasoning_points:
-      - "经营交易"
-      - "收入"
-      - "借款不是收入"
+      - misconception: 负债一定不好。
+        correction: 合理负债可以支持经营扩张，但过高负债会增加偿债压力。
+      - misconception: 股东投入的钱永远以现金形式存在。
+        correction: 股东投入可能已经转化为设备、存货或其他资产。
+    exercises:
+      - prompt: 企业向银行借入一年期贷款，应归入负债还是所有者权益？
+        answer: 负债。
+    mastery_questions:
+      - question: 所有者权益可以简单理解为什么？
+        answer: 资产扣除负债后归属于所有者的部分。
 
   - id: income_statement_revenue
-    title: "收入确认"
-    layer: 2
-    chain: "B. 从交易到利润表"
-    type: "rule"
-    prerequisites: [transaction_scope_for_income_statement]
-    derives: [revenue_not_equal_receipt]
-    contrasts: ["收款", "预收款", "借款流入"]
-    core_question: "什么时候销售或服务可以确认为收入？"
-    scenario: "咖啡店给客户交付了咖啡并形成收款权利，即使客户月底统一结算，本月也可能已经形成收入。"
-    guiding_questions:
-      - "收入确认更关注交付和履约，还是只关注现金到账？"
-      - "客户预付储值卡时是否一定马上全部确认为收入？"
-      - "赊销为什么可能先确认收入再等待收款？"
-    rule_summary: "收入通常在企业完成履约并取得收款权利时确认，现金到账时间不一定与收入确认时间一致。"
+    title: 收入：经营活动带来的流入
+    level: 2
+    prerequisites:
+      - financial_statement_overview
+    learning_objective: 理解收入的含义，并知道收入确认不一定等于收到现金。
+    explanation: 收入通常来自销售商品或提供服务，是利润表的起点。在权责发生制下，收入可能在现金收到前确认。
     common_misconceptions:
-      - "没收到现金就绝不能确认收入。"
-      - "收到钱就一定是营业收入。"
-    mastery_question: "请解释为什么赊销可能在未收现金时确认收入。"
-    expected_reasoning_points:
-      - "履约"
-      - "收款权利"
-      - "未收现金"
-
-  - id: revenue_not_equal_receipt
-    title: "收入不等于收款"
-    layer: 3
-    chain: "B. 从交易到利润表"
-    type: "contrast"
-    prerequisites: [income_statement_revenue]
-    derives: [income_statement_expenses]
-    contrasts: [cash_receipt_identification, receivable_creation]
-    core_question: "为什么收入增加不一定代表现金增加？"
-    scenario: "咖啡店给企业客户月结销售 2 万元，本月确认收入，但客户下月才付款。本月增加的是应收账款，不是现金。"
-    guiding_questions:
-      - "赊销发生时，现金和应收账款哪个更可能增加？"
-      - "利润表收入和现金流量表收款为什么可能不同步？"
-      - "这种时间差会给后续分析带来什么风险？"
-    rule_summary: "权责发生制下，收入确认与现金收取可以分离；未收现收入通常会在资产负债表中形成应收账款。"
-    common_misconceptions:
-      - "收入增长就说明现金马上变多。"
-      - "利润表能完整说明回款情况。"
-    mastery_question: "请说明赊销为什么会让收入增加但现金不增加。"
-    expected_reasoning_points:
-      - "收入"
-      - "现金"
-      - "应收账款"
+      - misconception: 收入增加就一定现金增加。
+        correction: 如果客户赊账购买，收入增加的同时可能增加应收账款而不是现金。
+      - misconception: 所有进账都属于收入。
+        correction: 借款收到现金是筹资现金流，不是营业收入。
+    exercises:
+      - prompt: 客户本月收到服务但下月付款，本月可能确认收入吗？
+        answer: 可能，取决于收入确认条件是否满足。
+    mastery_questions:
+      - question: 利润表通常从哪个项目开始？
+        answer: 收入。
 
   - id: income_statement_expenses
-    title: "费用确认"
-    layer: 4
-    chain: "B. 从交易到利润表"
-    type: "rule"
-    prerequisites: [revenue_not_equal_receipt]
-    derives: [depreciation_amortization]
-    contrasts: [balance_sheet_assets, "付款"]
-    core_question: "什么时候资源消耗应该确认为费用？"
-    scenario: "咖啡豆被卖出的咖啡消耗，员工当月提供劳动，门店当月使用租赁服务，这些消耗服务于当期收入或经营。"
-    guiding_questions:
-      - "咖啡豆从存货变为销售成本的触发点是什么？"
-      - "工资费用为什么可能在尚未付款时确认？"
-      - "费用确认和现金支付为什么可能不同步？"
-    rule_summary: "费用反映为取得收入或维持当期经营而发生的资源消耗，确认时点不必等同于付款时点。"
+    title: 费用：为取得收入发生的耗费
+    level: 2
+    prerequisites:
+      - financial_statement_overview
+    learning_objective: 识别常见费用，并理解费用如何影响利润。
+    explanation: 费用是企业为取得收入或维持经营发生的资源消耗，例如销售成本、工资、租金、营销费用和折旧费用。
     common_misconceptions:
-      - "没有付款就没有费用。"
-      - "费用越低一定越好。"
-    mastery_question: "请解释为什么已消耗的咖啡豆会从资产转为费用。"
-    expected_reasoning_points:
-      - "资源消耗"
-      - "费用"
-      - "当期经营"
-
-  - id: depreciation_amortization
-    title: "折旧与摊销是成本分配"
-    layer: 5
-    chain: "B. 从交易到利润表"
-    type: "inference"
-    prerequisites: [income_statement_expenses]
-    derives: [gross_margin]
-    contrasts: ["当期付款", "设备原值"]
-    core_question: "长期资产为什么通常不是买入当期一次性全部进费用？"
-    scenario: "咖啡机买入时可以使用五年。把全部成本放在购买当月会扭曲当月和以后期间的利润表现。"
-    guiding_questions:
-      - "设备服务多个期间，成本应如何分配更合理？"
-      - "折旧费用是否通常代表本月又付了一笔现金？"
-      - "折旧同时影响利润表和资产负债表的什么项目？"
-    rule_summary: "折旧和摊销把长期资产成本系统分配到受益期间，会减少利润，但通常不是当期现金流出。"
-    common_misconceptions:
-      - "折旧就是每月真的付现金。"
-      - "长期资产买入时必须一次性全部费用化。"
-    mastery_question: "请说明折旧为什么会影响利润但通常不代表当期现金流出。"
-    expected_reasoning_points:
-      - "成本分配"
-      - "减少利润"
-      - "非现金"
-
-  - id: gross_margin
-    title: "毛利形成"
-    layer: 6
-    chain: "B. 从交易到利润表"
-    type: "calculation"
-    prerequisites: [depreciation_amortization]
-    derives: [net_profit]
-    contrasts: [net_profit, "现金余额"]
-    core_question: "收入扣除直接成本后，毛利能说明什么？"
-    scenario: "咖啡店收入 10 万元，咖啡豆和直接制作成本 4 万元，毛利为 6 万元，毛利率为 60%。"
-    guiding_questions:
-      - "毛利为什么不是最终净利润？"
-      - "毛利率的分母通常是什么？"
-      - "毛利能初步反映产品或业务的哪种能力？"
-    rule_summary: "毛利 = 收入 - 销售成本；毛利率 = 毛利 / 收入，用于观察直接成本后的盈利空间。"
-    common_misconceptions:
-      - "毛利率就是净利率。"
-      - "毛利高就一定现金充足。"
-    mastery_question: "收入 10 万、销售成本 4 万时，请说明毛利和毛利率，并解释其含义。"
-    expected_reasoning_points:
-      - "毛利"
-      - "收入减成本"
-      - "毛利率"
+      - misconception: 费用都代表当期现金流出。
+        correction: 折旧等费用通常不代表当期付出现金。
+      - misconception: 费用越低越好。
+        correction: 过度压低必要投入可能影响长期经营能力。
+    exercises:
+      - prompt: 收入不变时，费用增加通常会让净利润怎样变化？
+        answer: 净利润减少。
+    mastery_questions:
+      - question: 工资、租金和广告费通常属于收入还是费用？
+        answer: 费用。
 
   - id: net_profit
-    title: "净利润推导"
-    layer: 7
-    chain: "B. 从交易到利润表"
-    type: "calculation"
-    prerequisites: [gross_margin]
-    derives: [accrual_vs_cash]
-    contrasts: [gross_margin, operating_cash_flow]
-    core_question: "毛利继续扣除期间费用等项目后，为什么得到净利润？"
-    scenario: "咖啡店毛利 6 万元，还发生工资、租金、营销、折旧和税费共 4 万元，最终净利润约为 2 万元。"
-    guiding_questions:
-      - "净利润为什么比毛利扣除了更多项目？"
-      - "净利润为正是否必然说明现金充足？"
-      - "哪些费用可能不对应当期现金流出？"
-    rule_summary: "净利润反映一段期间收入扣除成本、费用和税费后的经营成果，但它不等同于现金净增加。"
+    title: 净利润：收入减费用后的结果
+    level: 3
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+    learning_objective: 能计算简单场景下的净利润，并理解利润不等于现金。
+    explanation: 净利润大致是收入扣除成本、费用和税费后的结果，反映一段期间的经营成果。但净利润可能包含未收现收入和非现金费用。
     common_misconceptions:
-      - "净利润为正就一定不缺钱。"
-      - "收入高的企业一定利润高。"
-    mastery_question: "请解释净利润如何由收入、成本和费用推导出来，并说明它为什么不等于现金。"
-    expected_reasoning_points:
-      - "收入"
-      - "费用"
-      - "不等于现金"
-
-  - id: accrual_vs_cash
-    title: "权责发生制与现金制"
-    layer: 8
-    chain: "B. 从交易到利润表"
-    type: "contrast"
-    prerequisites: [net_profit]
-    derives: []
-    contrasts: [cash_flow_overview, revenue_not_equal_receipt]
-    core_question: "为什么利润表采用的权责发生制会和现金收付产生差异？"
-    scenario: "本月交付咖啡服务但下月收款，本月发生工资但下月支付。利润表关注交易归属期间，现金流关注实际收付。"
-    guiding_questions:
-      - "权责发生制问的是交易属于哪个期间，还是现金是否到账？"
-      - "现金制为什么更接近收付款记录？"
-      - "分析企业时为什么两种视角都需要？"
-    rule_summary: "权责发生制按收入费用归属期间确认利润；现金制按实际收付款记录现金变化，二者用于回答不同问题。"
-    common_misconceptions:
-      - "利润表就是现金流水表。"
-      - "没收钱就一定不能确认收入，没付款就一定没有费用。"
-    mastery_question: "请用赊销或未付工资例子说明权责发生制和现金制的差异。"
-    expected_reasoning_points:
-      - "权责发生制"
-      - "现金制"
-      - "时间差"
+      - misconception: 净利润为正就一定不缺钱。
+        correction: 如果回款慢或存货占用大，企业仍可能现金紧张。
+      - misconception: 收入高的企业利润一定高。
+        correction: 成本和费用也会影响利润。
+    exercises:
+      - prompt: 收入 200，费用 150，不考虑税费，净利润是多少？
+        answer: 50。
+    mastery_questions:
+      - question: 净利润和经营现金流可以不同吗？
+        answer: 可以。
 
   - id: cash_flow_overview
-    title: "现金流量表回答收付问题"
-    layer: 1
-    chain: "C. 从收付款到现金流量表"
-    type: "concept"
-    prerequisites: []
-    derives: [cash_receipt_identification]
-    contrasts: [net_profit, balance_sheet_snapshot]
-    core_question: "现金流量表为什么要单独回答现金从哪里来、到哪里去？"
-    scenario: "咖啡店账面盈利，但月底发现现金不足以支付供应商。利润表不能完整解释现金收付，需要现金流量表。"
-    guiding_questions:
-      - "利润为正但现金不足可能由什么造成？"
-      - "现金流量表关注现金实际收付还是交易归属期间？"
-      - "为什么借款现金流入不能直接说明经营赚钱？"
-    rule_summary: "现金流量表按实际现金流入流出解释现金变化，通常分为经营、投资和筹资活动。"
+    title: 现金流量表概览
+    level: 2
+    prerequisites:
+      - financial_statement_overview
+    learning_objective: 掌握现金流量表的三类活动，并理解现金流的重要性。
+    explanation: 现金流量表解释现金从哪里来、到哪里去，通常分为经营活动、投资活动和筹资活动。它帮助判断企业是否有足够现金维持运营。
     common_misconceptions:
-      - "有利润就一定有现金。"
-      - "现金流入越多就一定经营越好。"
-    mastery_question: "请说明为什么现金流量表要独立于利润表存在。"
-    expected_reasoning_points:
-      - "现金收付"
-      - "利润不同"
-      - "三类活动"
-
-  - id: cash_receipt_identification
-    title: "识别现金流入"
-    layer: 2
-    chain: "C. 从收付款到现金流量表"
-    type: "classification"
-    prerequisites: [cash_flow_overview]
-    derives: [operating_cash_flow]
-    contrasts: [income_statement_revenue, "应收账款增加"]
-    core_question: "哪些事件是真正的现金流入？"
-    scenario: "客户刷卡付款、企业客户赊账、银行发放贷款。三者都可能让业务扩大，但只有实际到账才是现金流入。"
-    guiding_questions:
-      - "赊账销售为什么不是当期现金流入？"
-      - "银行贷款到账是现金流入，但属于哪类活动？"
-      - "客户付款和确认收入为什么要分开判断？"
-    rule_summary: "现金流入必须发生实际现金或现金等价物流入；收入确认、应收账款增加不等于现金流入。"
-    common_misconceptions:
-      - "开出发票就等于收到现金。"
-      - "任何现金流入都属于经营活动。"
-    mastery_question: "请比较客户赊账和客户付款，说明哪一个形成现金流入。"
-    expected_reasoning_points:
-      - "实际到账"
-      - "赊账不是现金"
-      - "现金流入"
+      - misconception: 有利润就一定有现金。
+        correction: 应收账款、存货和非现金费用都会导致利润和现金流不同。
+      - misconception: 现金流越高一定越好。
+        correction: 需要看现金流来源，借款带来的现金流入不能直接代表经营质量好。
+    exercises:
+      - prompt: 写出现金流量表的三类活动。
+        answer: 经营活动、投资活动、筹资活动。
+    mastery_questions:
+      - question: 支付供应商货款通常属于哪类现金流？
+        answer: 经营活动现金流。
 
   - id: operating_cash_flow
-    title: "经营活动现金流"
-    layer: 3
-    chain: "C. 从收付款到现金流量表"
-    type: "classification"
-    prerequisites: [cash_receipt_identification]
-    derives: [supplier_employee_payments]
-    contrasts: [investing_financing_cash_flow, net_profit]
-    core_question: "为什么客户回款通常属于经营活动现金流？"
-    scenario: "咖啡店日常卖咖啡收到现金，也向供应商和员工付款。这些都来自主营业务日常运转。"
-    guiding_questions:
-      - "经营活动和主营业务有什么关系？"
-      - "客户回款为什么比借款更能说明主营业务造血？"
-      - "经营现金流为负时应该追问什么？"
-    rule_summary: "经营活动现金流来自主营业务相关收付款，是观察日常经营造血能力的重要线索。"
+    title: 经营活动现金流
+    level: 3
+    prerequisites:
+      - cash_flow_overview
+    learning_objective: 能识别经营活动现金流，并解释其对企业日常经营的意义。
+    explanation: 经营活动现金流来自主营业务相关收付款，例如收客户货款、支付供应商、支付工资和缴税。它是判断主营业务造血能力的重要指标。
     common_misconceptions:
-      - "经营现金流只看销售收入。"
-      - "经营现金流为负一定代表公司失败。"
-    mastery_question: "请说明客户回款为什么属于经营活动现金流，并指出它和净利润的区别。"
-    expected_reasoning_points:
-      - "经营活动"
-      - "客户回款"
-      - "造血能力"
-
-  - id: supplier_employee_payments
-    title: "经营性现金流出"
-    layer: 4
-    chain: "C. 从收付款到现金流量表"
-    type: "classification"
-    prerequisites: [operating_cash_flow]
-    derives: [investing_financing_cash_flow]
-    contrasts: [income_statement_expenses, "资本性支出"]
-    core_question: "支付供应商和员工为什么通常是经营性现金流出？"
-    scenario: "咖啡店支付咖啡豆采购款、工资和水电费。这些现金流出支撑日常销售，而不是购买长期资产或偿还融资。"
-    guiding_questions:
-      - "支付供应商和购买设备有什么不同？"
-      - "工资费用确认和工资付款是否一定在同一天？"
-      - "经营性现金流出过高会怎样影响现金余额？"
-    rule_summary: "与日常商品采购、服务提供、工资、税费等相关的现金支付通常归为经营活动现金流出。"
-    common_misconceptions:
-      - "所有付款都是费用。"
-      - "经营性现金流出越少一定越好。"
-    mastery_question: "请说明支付咖啡豆供应商货款为什么通常属于经营活动现金流出。"
-    expected_reasoning_points:
-      - "供应商付款"
-      - "经营活动"
-      - "现金流出"
+      - misconception: 经营现金流为负一定代表企业失败。
+        correction: 初创或扩张期可能阶段性为负，但长期为负需要重点关注。
+      - misconception: 经营现金流只看收入。
+        correction: 回款、付款、存货和应收应付变化都会影响经营现金流。
+    exercises:
+      - prompt: 收到客户货款属于哪类现金流？
+        answer: 经营活动现金流入。
+    mastery_questions:
+      - question: 支付员工工资通常属于哪类现金流？
+        answer: 经营活动现金流出。
 
   - id: investing_financing_cash_flow
-    title: "投资与筹资现金流"
-    layer: 5
-    chain: "C. 从收付款到现金流量表"
-    type: "contrast"
-    prerequisites: [supplier_employee_payments]
-    derives: [cash_flow_timing_gap]
-    contrasts: [operating_cash_flow, income_statement_revenue]
-    core_question: "为什么购买设备和银行借款不应混入经营现金流？"
-    scenario: "咖啡店花 20 万买设备，另向银行借入 30 万。前者通常是投资活动现金流出，后者是筹资活动现金流入。"
-    guiding_questions:
-      - "购买长期设备为什么属于投资活动？"
-      - "银行借款为什么属于筹资活动而不是收入？"
-      - "三类现金流分开后，分析会更清楚在哪里？"
-    rule_summary: "投资活动多与长期资产和投资买卖有关；筹资活动多与借款、还款、股权融资和分红有关。"
+    title: 投资与筹资现金流
+    level: 3
+    prerequisites:
+      - cash_flow_overview
+    learning_objective: 区分投资活动现金流和筹资活动现金流。
+    explanation: 投资活动现金流常与长期资产买卖和投资有关，筹资活动现金流常与借款、还款、股权融资和分红有关。
     common_misconceptions:
-      - "购买设备是普通经营费用。"
-      - "借款到账代表收入增长。"
-    mastery_question: "请把购买设备和银行借款分别归入现金流量表的活动类别。"
-    expected_reasoning_points:
-      - "投资活动"
-      - "筹资活动"
-      - "不是收入"
+      - misconception: 购买设备属于费用。
+        correction: 购买设备通常先形成资产，现金流分类通常属于投资活动现金流出。
+      - misconception: 银行借款属于营业收入。
+        correction: 借款是筹资活动现金流入，不是收入。
+    exercises:
+      - prompt: 企业向银行借入长期贷款，属于哪类现金流？
+        answer: 筹资活动现金流。
+    mastery_questions:
+      - question: 购买生产设备通常属于哪类现金流？
+        answer: 投资活动现金流。
 
-  - id: cash_flow_timing_gap
-    title: "收付时点差"
-    layer: 6
-    chain: "C. 从收付款到现金流量表"
-    type: "inference"
-    prerequisites: [investing_financing_cash_flow]
-    derives: [ending_cash_reconciliation]
-    contrasts: [accrual_vs_cash, receivable_creation]
-    core_question: "为什么同一笔业务会让利润和现金流出现在不同期间？"
-    scenario: "咖啡店本月销售给企业客户，下月收款；本月确认工资费用，下月发薪。利润和现金流自然出现期间差。"
-    guiding_questions:
-      - "收入确认早于收款时，现金流会滞后还是提前？"
-      - "费用确认早于付款时，现金流会出现在哪个期间？"
-      - "这种时点差为什么需要结合三张表解释？"
-    rule_summary: "权责发生制和现金收付的时间差会让利润表和现金流量表在同一期间出现差异。"
+  - id: accrual_vs_cash
+    title: 权责发生制与现金制
+    level: 3
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+      - cash_flow_overview
+    learning_objective: 理解收入费用确认与现金收付之间可能存在时间差。
+    explanation: 权责发生制关注收入和费用属于哪个会计期间，现金制关注现金是否实际收付。现代财务报表通常以权责发生制为基础。
     common_misconceptions:
-      - "利润和现金流不一致就一定是造假。"
-      - "现金流差异不用解释。"
-    mastery_question: "请用赊销说明利润确认和现金收款为什么可能跨期。"
-    expected_reasoning_points:
-      - "时点差"
-      - "赊销"
-      - "跨期"
+      - misconception: 没收到现金就不能确认收入。
+        correction: 在满足收入确认条件时，即使未收现金也可能确认收入。
+      - misconception: 没付款就没有费用。
+        correction: 如果费用已经发生，即使尚未付款也可能确认费用。
+    exercises:
+      - prompt: 本月交付商品、下月收款，本月可能确认什么资产？
+        answer: 应收账款。
+    mastery_questions:
+      - question: 权责发生制更关注现金是否实际收付，还是交易归属期间？
+        answer: 交易归属期间。
 
-  - id: ending_cash_reconciliation
-    title: "期末现金勾稽"
-    layer: 7
-    chain: "C. 从收付款到现金流量表"
-    type: "link"
-    prerequisites: [cash_flow_timing_gap]
-    derives: [cash_flow_quality_signal]
-    contrasts: [balance_sheet_snapshot, "利润余额"]
-    core_question: "现金流量表的期末现金为什么要能连接到资产负债表？"
-    scenario: "咖啡店期初现金 5 万，本期现金净增加 3 万，期末现金应为 8 万，并对应资产负债表上的货币资金。"
-    guiding_questions:
-      - "期初现金加现金净变化得到什么？"
-      - "期末现金通常对应资产负债表哪个项目？"
-      - "如果两张表现金对不上，应该怀疑什么？"
-    rule_summary: "现金流量表解释现金余额变化，期末现金余额通常应与资产负债表中的货币资金等项目勾稽。"
+  - id: depreciation_amortization
+    title: 折旧与摊销
+    level: 3
+    prerequisites:
+      - balance_sheet_assets
+      - income_statement_expenses
+    learning_objective: 理解长期资产成本如何分摊，以及折旧摊销对利润和现金流的影响。
+    explanation: 折旧和摊销把长期资产成本分摊到多个期间，会减少当期利润，但通常不代表当期现金流出。
     common_misconceptions:
-      - "现金流量表只是利润表附表，不影响资产负债表。"
-      - "期末现金可以和资产负债表现金无关。"
-    mastery_question: "请说明期初现金、本期现金净变化和期末现金之间的关系。"
-    expected_reasoning_points:
-      - "期初现金"
-      - "现金净变化"
-      - "期末现金"
-
-  - id: cash_flow_quality_signal
-    title: "现金流质量信号"
-    layer: 8
-    chain: "C. 从收付款到现金流量表"
-    type: "risk_signal"
-    prerequisites: [ending_cash_reconciliation]
-    derives: []
-    contrasts: [net_profit, red_flags]
-    core_question: "为什么经营现金流可以验证利润质量？"
-    scenario: "咖啡店连续盈利，但经营现金流长期为负，主要因为客户迟迟不付款。这说明利润没有及时转化为现金。"
-    guiding_questions:
-      - "利润长期高于经营现金流可能提示什么？"
-      - "经营现金流来自借款能否证明主营业务健康？"
-      - "现金流质量差时应回到哪些资产项目检查？"
-    rule_summary: "经营现金流能帮助验证利润是否转化为现金；长期利润好但经营现金流弱，需要检查应收账款、存货和收入质量。"
-    common_misconceptions:
-      - "净利润好就不用看现金流。"
-      - "现金流为正就一定来自经营改善。"
-    mastery_question: "请说明为什么经营现金流长期弱会削弱净利润的可信度。"
-    expected_reasoning_points:
-      - "经营现金流"
-      - "利润质量"
-      - "应收账款"
-
-  - id: credit_sale_identification
-    title: "识别赊销"
-    layer: 1
-    chain: "D. 从赊销到应收账款风险"
-    type: "concept"
-    prerequisites: []
-    derives: [receivable_creation]
-    contrasts: [cash_receipt_identification, income_statement_revenue]
-    core_question: "什么是赊销，它和现金销售的关键差异是什么？"
-    scenario: "咖啡店向办公室客户提供月结服务，本月交付咖啡，下月统一付款。这是赊销，不是现金销售。"
-    guiding_questions:
-      - "赊销是否可能已经形成收入？"
-      - "赊销发生时现金是否一定增加？"
-      - "赊销给企业带来的主要新增资产是什么？"
-    rule_summary: "赊销是先交付商品或服务、后收款的销售方式，可能确认收入但暂不形成现金流入。"
-    common_misconceptions:
-      - "赊销不是销售。"
-      - "赊销收入已经确认就等于现金已经到账。"
-    mastery_question: "请说明赊销和现金销售在收入与现金上的区别。"
-    expected_reasoning_points:
-      - "赊销"
-      - "收入"
-      - "未收现金"
-
-  - id: receivable_creation
-    title: "应收账款形成"
-    layer: 2
-    chain: "D. 从赊销到应收账款风险"
-    type: "inference"
-    prerequisites: [credit_sale_identification]
-    derives: [receivable_collection_cycle]
-    contrasts: [cash_receipt_identification, balance_sheet_assets]
-    core_question: "为什么赊销通常会形成应收账款？"
-    scenario: "办公室客户本月已收到咖啡服务但尚未付款，咖啡店拥有向客户收款的权利，这项权利记录为应收账款。"
-    guiding_questions:
-      - "应收账款代表现金、存货还是收款权利？"
-      - "为什么应收账款属于资产？"
-      - "应收账款增加时，现金流量表是否一定已有经营现金流入？"
-    rule_summary: "应收账款是企业因销售商品或提供服务形成的向客户收款权利，属于流动资产，但不是现金。"
-    common_misconceptions:
-      - "应收账款就是已经收到的钱。"
-      - "应收账款越多越安全。"
-    mastery_question: "请解释为什么赊销会增加应收账款而不是现金。"
-    expected_reasoning_points:
-      - "应收账款"
-      - "收款权利"
-      - "不是现金"
-
-  - id: receivable_collection_cycle
-    title: "回款周期"
-    layer: 3
-    chain: "D. 从赊销到应收账款风险"
-    type: "process"
-    prerequisites: [receivable_creation]
-    derives: [allowance_bad_debt_risk]
-    contrasts: [operating_cash_flow, "即时收款"]
-    core_question: "为什么应收账款需要关注回款周期？"
-    scenario: "客户约定 30 天付款却拖到 90 天，咖啡店虽然有收入和应收账款，但现金被客户占用更久。"
-    guiding_questions:
-      - "回款越慢，对经营现金流有什么影响？"
-      - "同样收入规模下，账期变长说明什么压力？"
-      - "回款周期延长会影响企业支付供应商吗？"
-    rule_summary: "回款周期越长，收入转化为现金越慢，企业越可能出现营运资金占用和现金压力。"
-    common_misconceptions:
-      - "只要客户最终会付款，回款时间不重要。"
-      - "应收账款增长只代表销售增长。"
-    mastery_question: "请说明回款周期变长为什么会削弱现金流。"
-    expected_reasoning_points:
-      - "回款周期"
-      - "现金流"
-      - "资金占用"
-
-  - id: allowance_bad_debt_risk
-    title: "坏账风险"
-    layer: 4
-    chain: "D. 从赊销到应收账款风险"
-    type: "risk_signal"
-    prerequisites: [receivable_collection_cycle]
-    derives: [receivable_turnover_signal]
-    contrasts: ["正常账期", "已收现金"]
-    core_question: "为什么应收账款可能收不回来？"
-    scenario: "部分办公室客户经营困难，超过账期仍不付款。咖啡店需要评估这些应收账款是否会变成坏账。"
-    guiding_questions:
-      - "客户信用变差会怎样影响应收账款质量？"
-      - "坏账风险为什么会影响利润和资产质量？"
-      - "长期逾期和正常账期应如何区分？"
-    rule_summary: "应收账款存在无法收回的信用风险，必要时需要计提坏账准备，从而减少资产价值并影响利润。"
-    common_misconceptions:
-      - "应收账款账面金额一定能全额收回。"
-      - "坏账只影响现金，不影响利润。"
-    mastery_question: "请说明为什么逾期应收账款可能同时影响资产质量和利润。"
-    expected_reasoning_points:
-      - "坏账"
-      - "资产质量"
-      - "利润影响"
-
-  - id: receivable_turnover_signal
-    title: "应收账款周转信号"
-    layer: 5
-    chain: "D. 从赊销到应收账款风险"
-    type: "analysis"
-    prerequisites: [allowance_bad_debt_risk]
-    derives: [working_capital]
-    contrasts: ["收入增长", "现金回款"]
-    core_question: "为什么收入增长时还要观察应收账款增长速度？"
-    scenario: "咖啡店收入增长 20%，但应收账款增长 80%。这可能意味着更多销售没有及时回款，收入质量需要复核。"
-    guiding_questions:
-      - "应收账款增长快于收入增长可能说明什么？"
-      - "销售扩张和放宽信用政策如何区分？"
-      - "为什么要结合经营现金流一起看？"
-    rule_summary: "应收账款增速显著高于收入增速，可能提示回款变慢、信用放松或收入质量下降。"
-    common_misconceptions:
-      - "收入增长越快，应收账款增长越快一定正常。"
-      - "只看利润就能排除回款风险。"
-    mastery_question: "收入增长 20%、应收账款增长 80% 时，请说明应追问什么风险。"
-    expected_reasoning_points:
-      - "应收账款增速"
-      - "收入质量"
-      - "回款风险"
+      - misconception: 折旧就是每月真的付出一笔钱。
+        correction: 购买资产时可能已经付款，折旧是会计分摊。
+      - misconception: 折旧不会影响报表。
+        correction: 折旧会影响利润表费用和资产负债表中的资产账面价值。
+    exercises:
+      - prompt: 一台设备 10 万元，预计使用 5 年，简单平均每年折旧是多少？
+        answer: 2 万元。
+    mastery_questions:
+      - question: 折旧费用通常会直接导致当期现金流出吗？
+        answer: 通常不会。
 
   - id: working_capital
-    title: "营运资本占用"
-    layer: 6
-    chain: "D. 从赊销到应收账款风险"
-    type: "calculation"
-    prerequisites: [receivable_turnover_signal]
-    derives: [current_ratio]
-    contrasts: ["利润", "现金余额"]
-    core_question: "为什么应收账款会占用营运资本？"
-    scenario: "咖啡店要先采购咖啡豆、支付工资，但客户尚未付款。应收账款越多，流动资产看似增加，现金压力也可能增加。"
-    guiding_questions:
-      - "营运资本通常如何计算？"
-      - "应收账款增加为什么可能占用现金？"
-      - "营运资本增加一定是好事吗？"
-    rule_summary: "营运资本通常等于流动资产减流动负债；应收账款增加会提高流动资产，但也可能代表资金被客户占用。"
+    title: 营运资本
+    level: 4
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+    learning_objective: 能计算营运资本，并理解流动资产和流动负债对短期经营的影响。
+    explanation: 营运资本通常等于流动资产减流动负债。它可以帮助观察企业短期运营资金是否充足，但需要结合资产质量判断。
     common_misconceptions:
-      - "营运资本越大一定越好。"
-      - "流动资产增加就一定现金更宽裕。"
-    mastery_question: "请说明应收账款增加为什么可能让营运资本看起来增加但现金更紧张。"
-    expected_reasoning_points:
-      - "营运资本"
-      - "应收账款"
-      - "现金占用"
+      - misconception: 营运资本越大一定越好。
+        correction: 如果营运资本增加来自存货积压或应收账款过高，可能反而占用现金。
+      - misconception: 应付账款越少越好。
+        correction: 合理利用供应商信用可能改善短期现金流。
+    exercises:
+      - prompt: 流动资产 120，流动负债 90，营运资本是多少？
+        answer: 30。
+    mastery_questions:
+      - question: 营运资本常用公式是什么？
+        answer: 流动资产减流动负债。
+
+  - id: gross_margin
+    title: 毛利率
+    level: 4
+    prerequisites:
+      - income_statement_revenue
+      - income_statement_expenses
+    learning_objective: 能计算毛利率，并用它初步判断产品或业务的盈利空间。
+    explanation: 毛利率等于毛利除以收入，毛利通常等于收入减销售成本。毛利率反映扣除直接成本后的盈利空间。
+    common_misconceptions:
+      - misconception: 毛利率就是净利率。
+        correction: 毛利率没有扣除销售、管理、研发、财务费用和税费等。
+      - misconception: 毛利率高就一定最终赚钱。
+        correction: 期间费用过高也可能导致净利润较低或亏损。
+    exercises:
+      - prompt: 收入 100，销售成本 70，毛利率是多少？
+        answer: 30%。
+    mastery_questions:
+      - question: 毛利率的分母通常是什么？
+        answer: 收入。
 
   - id: current_ratio
-    title: "流动比率的质量约束"
-    layer: 7
-    chain: "D. 从赊销到应收账款风险"
-    type: "analysis"
-    prerequisites: [working_capital]
-    derives: [receivable_risk_conclusion]
-    contrasts: ["现金比率", "资产质量"]
-    core_question: "为什么流动比率高也可能掩盖应收账款风险？"
-    scenario: "咖啡店流动资产 100 万、流动负债 50 万，流动比率为 2。但流动资产中 70 万是逾期应收账款。"
-    guiding_questions:
-      - "流动比率的公式是什么？"
-      - "流动资产中应收账款质量差会怎样影响偿债判断？"
-      - "为什么不能只看比率数字？"
-    rule_summary: "流动比率 = 流动资产 / 流动负债。比率高不等于安全，还要检查流动资产能否及时变现。"
+    title: 流动比率
+    level: 4
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+      - working_capital
+    learning_objective: 能计算流动比率，并理解它对短期偿债能力的提示作用。
+    explanation: 流动比率等于流动资产除以流动负债。它越高通常表示短期偿债资源越多，但仍要关注存货和应收账款质量。
     common_misconceptions:
-      - "流动比率高就绝对没有短期偿债风险。"
-      - "流动比率只和现金有关。"
-    mastery_question: "请解释为什么大量逾期应收账款会削弱流动比率的解释力。"
-    expected_reasoning_points:
-      - "流动比率"
-      - "资产质量"
-      - "逾期应收"
-
-  - id: receivable_risk_conclusion
-    title: "应收账款风险结论"
-    layer: 8
-    chain: "D. 从赊销到应收账款风险"
-    type: "synthesis"
-    prerequisites: [current_ratio]
-    derives: []
-    contrasts: [cash_flow_quality_signal, red_flags]
-    core_question: "如何从赊销一路推理到应收账款风险？"
-    scenario: "咖啡店为了冲收入放宽账期，收入增长但经营现金流下降、应收账款快速上升且逾期增加。"
-    guiding_questions:
-      - "赊销如何同时影响利润表和资产负债表？"
-      - "哪些信号说明收入没有及时转化为现金？"
-      - "为什么最终结论应是风险提示而不是立即定罪？"
-    rule_summary: "赊销可能带来收入和应收账款，但若回款变慢、逾期增加、经营现金流转弱，就形成应收账款和收入质量风险。"
-    common_misconceptions:
-      - "应收账款风险出现就能直接证明企业造假。"
-      - "只要收入增长，应收账款风险可以忽略。"
-    mastery_question: "请串联赊销、应收账款、回款、现金流和坏账风险，形成一个风险判断。"
-    expected_reasoning_points:
-      - "赊销"
-      - "回款变慢"
-      - "坏账风险"
-
-  - id: financial_statement_overview
-    title: "三张表的分工"
-    layer: 1
-    chain: "E. 从综合数据到公司健康判断"
-    type: "concept"
-    prerequisites: []
-    derives: [profitability_signal]
-    contrasts: [balance_sheet_snapshot, net_profit, cash_flow_overview]
-    core_question: "三张财务报表分别回答什么问题？"
-    scenario: "同一家公司可能资产规模大、利润为正，但现金紧张。必须先分清三张表各自回答的问题。"
-    guiding_questions:
-      - "资产负债表回答什么时点问题？"
-      - "利润表回答什么期间成果问题？"
-      - "现金流量表回答什么收付问题？"
-    rule_summary: "资产负债表看某一时点的财务状况，利润表看一段期间的经营成果，现金流量表看一段期间的现金收付变化。"
-    common_misconceptions:
-      - "只看利润表就能判断公司好坏。"
-      - "三张表彼此独立，不需要勾稽。"
-    mastery_question: "请分别说明资产负债表、利润表和现金流量表回答的问题。"
-    expected_reasoning_points:
-      - "资产负债表"
-      - "利润表"
-      - "现金流量表"
-
-  - id: profitability_signal
-    title: "盈利能力信号"
-    layer: 2
-    chain: "E. 从综合数据到公司健康判断"
-    type: "analysis"
-    prerequisites: [financial_statement_overview, gross_margin, net_profit]
-    derives: [debt_to_asset]
-    contrasts: [cash_flow_quality_signal, debt_to_asset]
-    core_question: "从利润表数据中可以先观察哪些盈利能力信号？"
-    scenario: "公司收入增长、毛利率稳定、净利润上升，看起来盈利改善。但这只是健康判断的第一层。"
-    guiding_questions:
-      - "毛利率能说明哪一层盈利空间？"
-      - "净利润能说明什么最终经营成果？"
-      - "为什么盈利改善还需要现金流和负债验证？"
-    rule_summary: "盈利能力先看收入质量、毛利率和净利润趋势，但不能单独替代现金流、资产质量和偿债能力判断。"
-    common_misconceptions:
-      - "净利润增长就代表公司一定健康。"
-      - "毛利率高就一定没有经营风险。"
-    mastery_question: "请说明为什么盈利能力是公司健康判断的起点，但不是终点。"
-    expected_reasoning_points:
-      - "毛利率"
-      - "净利润"
-      - "需要验证"
+      - misconception: 流动比率高就绝对安全。
+        correction: 如果流动资产中大量是难以变现的存货或坏账，应谨慎判断。
+      - misconception: 流动比率只和现金有关。
+        correction: 流动资产还包括应收账款、存货等项目。
+    exercises:
+      - prompt: 流动资产 90，流动负债 60，流动比率是多少？
+        answer: 1.5。
+    mastery_questions:
+      - question: 流动比率用于观察长期盈利能力还是短期偿债能力？
+        answer: 短期偿债能力。
 
   - id: debt_to_asset
-    title: "资产负债率与杠杆"
-    layer: 3
-    chain: "E. 从综合数据到公司健康判断"
-    type: "analysis"
-    prerequisites: [profitability_signal, accounting_equation]
-    derives: [roe]
-    contrasts: [current_ratio, "盈利能力"]
-    core_question: "为什么盈利之外还要看资产负债率？"
-    scenario: "两家公司净利润都增长，其中一家公司靠大量借债扩张。高负债可能放大利润，也可能放大偿债压力。"
-    guiding_questions:
-      - "资产负债率的分子和分母是什么？"
-      - "高负债为什么可能增加偿债风险？"
-      - "低负债是否一定代表管理更好？"
-    rule_summary: "资产负债率 = 总负债 / 总资产，用于观察资产中有多少由债务支持，需结合行业和现金流判断风险。"
+    title: 资产负债率
+    level: 4
+    prerequisites:
+      - balance_sheet_assets
+      - balance_sheet_liabilities_equity
+    learning_objective: 能计算资产负债率，并理解企业杠杆水平和偿债风险。
+    explanation: 资产负债率等于总负债除以总资产，反映资产中有多少由债务资金支持。过高的资产负债率可能带来偿债压力。
     common_misconceptions:
-      - "资产负债率越低一定越好。"
-      - "只看负债金额，不用看资产规模。"
-    mastery_question: "请说明资产负债率如何帮助判断企业杠杆和偿债压力。"
-    expected_reasoning_points:
-      - "总负债"
-      - "总资产"
-      - "偿债压力"
+      - misconception: 资产负债率越低一定越好。
+        correction: 过低杠杆可能意味着企业没有有效利用外部资金，需要结合行业和阶段判断。
+      - misconception: 资产负债率只看负债规模。
+        correction: 还要看总资产规模和资产质量。
+    exercises:
+      - prompt: 总资产 200，总负债 80，资产负债率是多少？
+        answer: 40%。
+    mastery_questions:
+      - question: 资产负债率的分子是什么？
+        answer: 总负债。
 
   - id: roe
-    title: "ROE 与股东回报"
-    layer: 4
-    chain: "E. 从综合数据到公司健康判断"
-    type: "analysis"
-    prerequisites: [debt_to_asset, net_profit, equity_residual_after_liabilities]
-    derives: [statement_links]
-    contrasts: [debt_to_asset, "净利率"]
-    core_question: "为什么 ROE 高需要拆开看来源？"
-    scenario: "一家公司 ROE 很高，可能来自净利润率高，也可能来自高负债压低权益规模。两种含义不同。"
-    guiding_questions:
-      - "ROE 的分子和分母是什么？"
-      - "高杠杆为什么可能推高 ROE？"
-      - "为什么 ROE 高仍要检查资产负债率和现金流？"
-    rule_summary: "ROE = 净利润 / 所有者权益，衡量股东权益回报；高 ROE 需要区分盈利能力提升还是杠杆放大。"
+    title: 净资产收益率 ROE
+    level: 4
+    prerequisites:
+      - net_profit
+      - balance_sheet_liabilities_equity
+    learning_objective: 能计算 ROE，并理解它代表股东权益回报水平。
+    explanation: ROE 等于净利润除以所有者权益，用于观察股东投入资本带来的回报。它受盈利能力、资产效率和杠杆水平共同影响。
     common_misconceptions:
-      - "ROE 高一定代表公司质量高。"
-      - "ROE 只和利润有关。"
-    mastery_question: "请说明为什么高 ROE 可能来自高杠杆，而不一定只是经营优秀。"
-    expected_reasoning_points:
-      - "净利润"
-      - "所有者权益"
-      - "高杠杆"
+      - misconception: ROE 高一定代表企业质量好。
+        correction: 高 ROE 可能来自高杠杆，需要结合资产负债率和现金流判断。
+      - misconception: ROE 只和利润有关。
+        correction: 所有者权益规模也会影响 ROE。
+    exercises:
+      - prompt: 净利润 20，所有者权益 100，ROE 是多少？
+        answer: 20%。
+    mastery_questions:
+      - question: ROE 通常衡量谁的资本回报？
+        answer: 股东或所有者权益的回报。
 
   - id: statement_links
-    title: "三张表勾稽"
-    layer: 5
-    chain: "E. 从综合数据到公司健康判断"
-    type: "link"
-    prerequisites: [roe, ending_cash_reconciliation, accrual_vs_cash]
-    derives: [basic_analysis_process]
-    contrasts: ["孤立看表", "单指标判断"]
-    core_question: "为什么健康判断必须检查三张表之间是否能相互解释？"
-    scenario: "利润表显示净利润增长，资产负债表显示应收账款大增，现金流量表显示经营现金流下降。三张表合在一起才揭示问题。"
-    guiding_questions:
-      - "净利润和所有者权益之间可能有什么联系？"
-      - "期末现金和资产负债表货币资金如何勾稽？"
-      - "应收账款变化如何解释利润和现金流差异？"
-    rule_summary: "三张表通过净利润、现金余额、营运资本和资产负债变化相互连接，异常断裂是重要复核线索。"
+    title: 三张报表之间的勾稽关系
+    level: 5
+    prerequisites:
+      - net_profit
+      - balance_sheet_assets
+      - cash_flow_overview
+    learning_objective: 理解三张报表之间的关键连接关系，避免孤立看表。
+    explanation: 三张报表互相连接。净利润会影响所有者权益，折旧连接利润和现金流，现金流量表的期末现金余额通常对应资产负债表的货币资金。
     common_misconceptions:
-      - "三张表数字互不影响。"
-      - "现金流量表只是利润表的补充说明。"
-    mastery_question: "请用净利润、应收账款和经营现金流说明三张表如何相互解释。"
-    expected_reasoning_points:
-      - "净利润"
-      - "应收账款"
-      - "经营现金流"
+      - misconception: 三张报表数字互不影响。
+        correction: 报表之间有多种勾稽关系，异常断裂可能提示数据或经营问题。
+      - misconception: 现金流量表只是利润表的附表。
+        correction: 现金流量表提供利润表无法完全反映的现金收付信息。
+    exercises:
+      - prompt: 现金流量表的期末现金余额通常对应资产负债表的哪个项目？
+        answer: 货币资金。
+    mastery_questions:
+      - question: 折旧会影响利润表，也会帮助解释哪张表中的现金流调整？
+        answer: 现金流量表。
 
   - id: basic_analysis_process
-    title: "基础健康分析流程"
-    layer: 6
-    chain: "E. 从综合数据到公司健康判断"
-    type: "process"
-    prerequisites: [statement_links, profitability_signal, debt_to_asset, cash_flow_quality_signal]
-    derives: [red_flags]
-    contrasts: ["单一指标", "复杂模型优先"]
-    core_question: "初学者如何形成稳定的公司健康分析顺序？"
-    scenario: "面对一家公司的报表，先看盈利，再看负债和流动性，再用现金流验证利润，最后识别异常信号。"
-    guiding_questions:
-      - "为什么先看盈利但不能停在盈利？"
-      - "偿债能力和现金流分别验证什么？"
-      - "分析流程为什么要可重复而不是随意挑指标？"
-    rule_summary: "基础流程可以是盈利能力、偿债能力、资产质量、现金流质量和风险信号的交叉验证。"
+    title: 基础财务分析流程
+    level: 5
+    prerequisites:
+      - gross_margin
+      - current_ratio
+      - debt_to_asset
+      - roe
+    learning_objective: 能从盈利能力、偿债能力、运营效率和现金流质量四个角度做初步分析。
+    explanation: 基础分析不应只看单个指标。可以先看利润和毛利率，再看资产负债率和流动比率，接着观察营运资本，最后用现金流验证利润质量。
     common_misconceptions:
-      - "一个指标好就能证明公司好。"
-      - "分析流程越复杂越专业。"
-    mastery_question: "请给出一个从盈利到现金流再到风险信号的基础分析顺序。"
-    expected_reasoning_points:
-      - "盈利能力"
-      - "偿债能力"
-      - "现金流质量"
+      - misconception: 一个指标好就能证明公司好。
+        correction: 财务分析需要多指标交叉验证。
+      - misconception: 分析流程必须复杂才专业。
+        correction: 初学阶段应先建立稳定、可重复的基础分析框架。
+    exercises:
+      - prompt: 如果利润为正但经营现金流长期为负，下一步应重点检查什么？
+        answer: 应收账款、存货、收入质量和营运资本变化。
+    mastery_questions:
+      - question: 基础财务分析至少应同时关注利润和什么？
+        answer: 现金流、偿债能力和资产质量。
 
   - id: red_flags
-    title: "综合风险信号"
-    layer: 7
-    chain: "E. 从综合数据到公司健康判断"
-    type: "risk_signal"
-    prerequisites: [basic_analysis_process, receivable_risk_conclusion]
-    derives: [company_health_judgment]
-    contrasts: ["结论", "证据"]
-    core_question: "哪些报表现象应该被视为风险信号而不是直接结论？"
-    scenario: "收入增长但经营现金流下降、应收账款大增、负债率升高、毛利率下滑。这些信号提示需要进一步追问。"
-    guiding_questions:
-      - "风险信号和最终判断有什么区别？"
-      - "收入增长但现金流恶化为什么值得警惕？"
-      - "多个风险信号同时出现时应如何升级关注？"
-    rule_summary: "风险信号包括利润与现金流背离、应收账款异常、存货积压、负债过高、利润率下滑和勾稽异常。"
+    title: 初学者常见风险信号
+    level: 6
+    prerequisites:
+      - statement_links
+      - basic_analysis_process
+    learning_objective: 识别基础财务风险信号，并形成进一步追问的习惯。
+    explanation: 常见风险信号包括收入增长但现金流恶化、应收账款快速上升、存货积压、负债过高、利润率持续下滑和报表勾稽关系异常。
     common_misconceptions:
-      - "出现风险信号就能直接断言公司有问题。"
-      - "只有亏损公司才有风险。"
-    mastery_question: "请列出至少三个公司健康分析中的风险信号，并说明它们只是进一步调查线索。"
-    expected_reasoning_points:
-      - "风险信号"
-      - "现金流恶化"
-      - "进一步调查"
-
-  - id: company_health_judgment
-    title: "公司健康判断"
-    layer: 8
-    chain: "E. 从综合数据到公司健康判断"
-    type: "synthesis"
-    prerequisites: [red_flags]
-    derives: []
-    contrasts: ["单表结论", "绝对好坏判断"]
-    core_question: "如何把综合数据转化为有条件的公司健康判断？"
-    scenario: "一家公司利润增长、ROE 提升，但应收账款和负债同步上升，经营现金流转弱。健康判断应表达优势、风险和需要验证的问题。"
-    guiding_questions:
-      - "哪些证据支持公司经营改善？"
-      - "哪些证据削弱这个改善判断？"
-      - "为什么结论应带条件和下一步核查方向？"
-    rule_summary: "公司健康判断应综合盈利、现金流、偿债能力、资产质量和风险信号，形成有证据、有边界、可复核的结论。"
-    common_misconceptions:
-      - "财务分析必须给出绝对好或坏。"
-      - "只要指标多数好，就不用说明限制条件。"
-    mastery_question: "请基于利润增长、应收账款上升、经营现金流下降和负债率上升，给出一个有条件的健康判断。"
-    expected_reasoning_points:
-      - "综合判断"
-      - "优势和风险"
-      - "核查方向"
+      - misconception: 出现风险信号就能直接下结论。
+        correction: 风险信号意味着需要进一步调查，不等于已经证明企业有问题。
+      - misconception: 风险只来自亏损。
+        correction: 盈利企业也可能因现金流、杠杆或资产质量问题产生风险。
+    exercises:
+      - prompt: 收入增长但应收账款异常快速增长，可能提示什么问题？
+        answer: 销售可能没有及时转化为现金，存在回款或收入质量风险。
+    mastery_questions:
+      - question: 经营现金流长期为负是否值得关注？
+        answer: 是，需要进一步分析原因。
