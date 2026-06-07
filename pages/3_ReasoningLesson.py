@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 import math
 import re
 import time
@@ -87,6 +88,13 @@ def ensure_timer(node_id: str) -> None:
 def elapsed_seconds() -> int:
     started_at = float(st.session_state.get("reasoning_start_time", time.time()))
     return max(int(time.time() - started_at), 0)
+
+
+def format_display_time(value: str) -> str:
+    try:
+        return datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return value
 
 
 def normalize_text(text: str) -> str:
@@ -240,7 +248,7 @@ def render_history(conn: Any, student_id: int, node_id: str) -> None:
 
     history = [
         {
-            "时间": row["created_at"],
+            "时间": format_display_time(row["created_at"]),
             "答案": row["student_answer"],
             "结果": "通过" if row["is_correct"] else "未通过",
             "用时秒": row["duration_seconds"],
