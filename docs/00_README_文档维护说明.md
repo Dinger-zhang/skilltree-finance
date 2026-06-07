@@ -10,7 +10,7 @@
 
 ## 2. 推荐维护的文档体系
 
-建议维护 6 个核心文档：
+建议维护 7 个核心文档：
 
 1. `01_PROJECT_CONTEXT.md`  
    项目总览文档，记录项目愿景、当前阶段、核心假设、已形成的关键结论。每次对话前最值得上传。
@@ -30,6 +30,9 @@
 6. `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`  
    决策日志与待解决问题文档，记录每次重大调整、被否定的方向、已确认结论、当前问题池。
 
+7. `07_V0_2_ACCEPTANCE_REPORT.md`  
+   v0.2 验收报告文档，记录功能验收标准、实际验收结果、验收结论、遗留问题和 v0.2.1 内部试用目标。
+
 ## 3. 每次对话如何使用这些文档
 
 ### 情况 A：讨论总体方向
@@ -48,6 +51,13 @@
 - `01_PROJECT_CONTEXT.md`
 - `03_MVP_DEVELOPMENT_PLAN.md`
 - `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`
+
+### 情况 C+：讨论 v0.2 验收结果和 v0.2.1 试用
+上传：
+- `01_PROJECT_CONTEXT.md`
+- `03_MVP_DEVELOPMENT_PLAN.md`
+- `04_EXPERIMENT_PLAN.md`
+- `07_V0_2_ACCEPTANCE_REPORT.md`
 
 ### 情况 D：讨论实验设计和数据分析
 上传：
