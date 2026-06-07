@@ -401,3 +401,83 @@ K12 正式商业化
 ```
 
 原因：当前最关键的是验证学习机制，而不是扩展功能。
+
+## 11. 大模型 API 增强层开发计划
+
+当前系统不需要依赖大模型 API 才能运行。DeepSeek/其他大模型 API 应作为可关闭、可回退、可审计的增强层接入。
+
+### 11.1 推荐新增模块
+
+如果进入 LLM Shadow Evaluator 开发，建议新增：
+
+```text
+src/llm_client.py          # 统一封装 DeepSeek/OpenAI 等 API 调用
+src/llm_evaluator.py       # 解释题语义评分、错因分类、反馈生成
+src/llm_prompts.py         # prompt 模板与版本管理
+src/llm_schema.py          # JSON schema 校验与默认回退值
+.env.example               # DEEPSEEK_API_KEY=，USE_LLM_EVALUATOR=false
+```
+
+### 11.2 推荐新增数据表
+
+```text
+llm_evaluation_records
+```
+
+建议字段：
+
+```text
+id
+student_id
+node_id
+student_answer
+rule_passed
+llm_score
+llm_passed
+llm_matched_points
+llm_missed_points
+llm_misconception
+llm_feedback
+llm_confidence
+model_name
+prompt_version
+raw_response
+error_message
+created_at
+```
+
+### 11.3 v0.2.1 最小实现范围
+
+```text
+1. 没有 API Key 时系统照常运行。
+2. USE_LLM_EVALUATOR=false 时完全不调用外部 API。
+3. 学生提交解释后，规则评分照常执行。
+4. 如果开启 LLM，则额外生成影子评分。
+5. 影子评分只写入 llm_evaluation_records，不改变 node_status。
+6. API 失败、超时、JSON 解析失败时，记录错误并回退，不影响学生流程。
+```
+
+### 11.4 Codex 实现约束
+
+给 Codex 的开发要求应明确：
+
+```text
+不要让 LLM 结果直接决定 mastered / weak。
+不要把学生姓名、学号、班级等敏感信息发送给外部 API。
+不要让模型自由输出非 JSON 内容。
+不要把学生回答当成指令执行。
+必须有 timeout、fallback、schema validation、prompt_version 记录。
+必须能在无网络、无 API Key 条件下运行全部原有功能。
+```
+
+### 11.5 LLM Shadow Evaluator 验收标准
+
+```text
+1. 关闭 LLM 时，系统行为与当前 v0.2 完全一致。
+2. 开启 LLM 且 API Key 有效时，每次解释题提交可生成一条影子评分记录。
+3. LLM 返回结果能解析为固定 JSON。
+4. 影子评分记录包含 node_id、student_answer、rule_result、llm_result、model_name、prompt_version。
+5. API 调用失败不会阻断学生学习。
+6. 至少收集 20 条回答，比较规则评分与 LLM 评分差异。
+7. 人工复核冲突样本后，再决定是否在 v0.3 中启用正式 LLM 反馈。
+```

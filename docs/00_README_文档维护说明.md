@@ -10,7 +10,7 @@
 
 ## 2. 推荐维护的文档体系
 
-建议维护 7 个核心文档：
+建议维护 8 个核心文档：
 
 1. `01_PROJECT_CONTEXT.md`  
    项目总览文档，记录项目愿景、当前阶段、核心假设、已形成的关键结论。每次对话前最值得上传。
@@ -70,6 +70,14 @@
 - `01_PROJECT_CONTEXT.md`
 - `05_BUSINESS_ROADMAP.md`
 - `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`
+
+### 情况 F：讨论大模型 API、DeepSeek 接入、AI 助教或自动生成内容
+上传：
+- `01_PROJECT_CONTEXT.md`
+- `02_PRODUCT_AND_LEARNING_DESIGN.md`
+- `03_MVP_DEVELOPMENT_PLAN.md`
+- `06_DECISION_LOG_AND_OPEN_QUESTIONS.md`
+- `08_LLM_API_ENHANCEMENT_PLAN.md`
 
 ## 4. 每次对话结束后如何更新
 
