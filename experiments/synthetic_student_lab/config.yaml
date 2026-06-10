@@ -1,0 +1,45 @@
+experiment_id: ssl_v0_3_minimal
+graph_path: data/knowledge_graph.yaml
+chain_id: "B. 从交易到利润表"
+output_dir: experiments/synthetic_student_lab/outputs/ssl_v0_3_minimal
+
+# Default is fully offline and deterministic. Set mock_mode=false only after
+# configuring both student and judge clients explicitly.
+mock_mode: true
+allow_graph_fallback: true
+pass_ratio: 0.6
+
+conditions:
+  - no_course_baseline
+  - node_only
+  - chain_so_far
+  - hidden_transfer
+
+files:
+  personas: experiments/synthetic_student_lab/personas.yaml
+  transfer_cases: experiments/synthetic_student_lab/transfer_cases.yaml
+  simulation_runs: simulation_runs.jsonl
+  judge_results: judge_results.jsonl
+  node_failure_report: node_failure_report.md
+
+student_client:
+  enabled: false
+  provider: openai_compatible
+  model: ""
+  api_key_env: SSL_STUDENT_API_KEY
+  base_url_env: SSL_STUDENT_BASE_URL
+  temperature: 0.2
+  timeout_seconds: 60
+
+judge_client:
+  enabled: false
+  provider: openai_compatible
+  model: ""
+  api_key_env: SSL_JUDGE_API_KEY
+  base_url_env: SSL_JUDGE_BASE_URL
+  temperature: 0.0
+  timeout_seconds: 60
+
+report:
+  max_samples_per_section: 5
+  high_risk_top_n: 8
