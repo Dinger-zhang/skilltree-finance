@@ -112,18 +112,35 @@ def llm_judge_response(
     user_payload = {
         "untrusted_student_answer_to_grade": str(record.get("student_answer", "")),
     }
-    completion = client.chat_completion(
-        [
+    last_parse_error: LLMParseError | None = None
+    last_request_id = ""
+    for attempt in range(2):
+        messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-        ],
-        json_mode=True,
-    )
-    raw = completion["content"]
-    try:
-        parsed = parse_json_object(raw)
-    except LLMParseError as exc:
-        raise LLMParseError(exc.parse_error, exc.raw_response, completion.get("request_id", "")) from exc
+        ]
+        if attempt:
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        "Previous response was not parseable JSON. Return exactly one JSON object "
+                        "and no markdown code block or explanation."
+                    ),
+                }
+            )
+        completion = client.chat_completion(messages, json_mode=True)
+        raw = completion["content"]
+        last_request_id = str(completion.get("request_id", ""))
+        try:
+            parsed = parse_json_object(raw)
+            break
+        except LLMParseError as exc:
+            last_parse_error = LLMParseError(exc.parse_error, exc.raw_response, last_request_id)
+    else:
+        assert last_parse_error is not None
+        raise last_parse_error
+
     score = max(0.0, min(1.0, coerce_float(parsed.get("judge_score"), 0.0)))
     return {
         "judge_score": round(score, 4),
@@ -138,7 +155,7 @@ def llm_judge_response(
         "failure_reason": str(parsed.get("failure_reason", "")),
         "judge_raw_response": raw,
         "judge_parse_error": "",
-        "judge_request_id": completion.get("request_id", ""),
+        "judge_request_id": last_request_id,
     }
 
 
@@ -244,6 +261,7 @@ def judge_records(
                 ],
                 "rule_completeness_blocker": rule_result["completeness_blocker"],
                 "rule_failure_reason": rule_result["rule_failure_reason"],
+                "rule_score_detail": rule_result["rule_score_detail"],
                 "judge_score": judge_result["judge_score"],
                 "judge_passed": judge_result["judge_passed"],
                 "judge_request_id": judge_request_id,
@@ -257,6 +275,7 @@ def judge_records(
                 "external_knowledge_suspicion": external_suspicion,
                 "conflict_type": conflict_type,
                 "failure_type": conflict_type,
+                "possible_rule_false_fail": conflict_type == "rule_fail_llm_pass",
                 "judge_failure_reason": judge_result.get("failure_reason", ""),
                 "error_message": error_message,
             }

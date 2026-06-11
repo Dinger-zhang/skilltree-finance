@@ -10,6 +10,7 @@ import re
 from typing import Any
 from urllib import request
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit, urlunsplit
 
 import yaml
 
@@ -267,6 +268,7 @@ REQUIRED_OUTPUT_FIELDS = (
     "judge_parse_error",
     "used_node_ids",
     "rule_score",
+    "rule_score_detail",
     "rule_passed",
     "judge_score",
     "judge_passed",
@@ -274,6 +276,7 @@ REQUIRED_OUTPUT_FIELDS = (
     "missing_reasoning_points",
     "misconception_tags",
     "external_knowledge_suspicion",
+    "possible_rule_false_fail",
     "failure_type",
     "error_message",
     "created_at",
@@ -669,6 +672,50 @@ COMPLETENESS_BLOCKERS = (
     "只需要背规则",
 )
 
+RULE_PASS_RATIO_FLOOR = 2 / 3
+
+BUILTIN_REASONING_POINT_ALIASES: dict[str, list[str]] = {
+    "赊销可能先确认收入": [
+        "赊销",
+        "商品已经卖出",
+        "货已经卖出",
+        "已经交付",
+        "可以确认收入",
+        "可能确认收入",
+        "利润表确认收入",
+        "利润表可能确认收入",
+        "收入确认遵循权责发生制",
+    ],
+    "未收现金时现金不一定增加": [
+        "客户还没有付款",
+        "客户尚未付款",
+        "客户没有付款",
+        "没有收到现金",
+        "没有收到钱",
+        "未收到现金",
+        "未收到钱",
+        "现金没有增加",
+        "现金未增加",
+        "现金并未增加",
+        "现金不一定增加",
+        "现金流入没有发生",
+    ],
+    "可能形成应收账款而不是现金流入": [
+        "应收账款",
+        "以后付款",
+        "后付款",
+        "后才付款",
+        "天后付款",
+        "天后才付款",
+        "未来收款权利",
+        "客户之后付款",
+        "客户以后付款",
+        "客户未来付款",
+        "不是现金流入",
+        "不是现金到账",
+    ],
+}
+
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", "", str(text).lower())
@@ -724,6 +771,32 @@ def normalize_expected_reasoning_points(points: list[Any]) -> list[dict[str, Any
     ]
 
 
+def builtin_reasoning_point_aliases(point_text: str) -> list[str]:
+    return BUILTIN_REASONING_POINT_ALIASES.get(point_text, [])
+
+
+def reasoning_point_variants(point: Any) -> list[dict[str, str]]:
+    config = normalize_reasoning_point(point)
+    candidates = [
+        {"source": "text", "value": config["text"]},
+        *({"source": "alias", "value": alias} for alias in config["aliases"]),
+        *(
+            {"source": "builtin_alias", "value": alias}
+            for alias in builtin_reasoning_point_aliases(config["text"])
+        ),
+    ]
+    variants: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        value = str(candidate["value"]).strip()
+        key = normalize_text(value)
+        if not value or key in seen:
+            continue
+        seen.add(key)
+        variants.append({"source": candidate["source"], "value": value})
+    return variants
+
+
 def text_variant_matches(answer: str, variant: str) -> bool:
     normalized_answer = normalize_text(answer)
     normalized_point = normalize_text(variant)
@@ -733,10 +806,23 @@ def text_variant_matches(answer: str, variant: str) -> bool:
     return any(token in normalized_answer for token in tokens)
 
 
-def point_matched(answer: str, point: Any) -> bool:
+def reasoning_point_match_detail(answer: str, point: Any) -> dict[str, Any]:
     config = normalize_reasoning_point(point)
-    variants = [config["text"], *config["aliases"]]
-    return any(text_variant_matches(answer, variant) for variant in variants if variant)
+    matched_by = [
+        variant
+        for variant in reasoning_point_variants(config)
+        if text_variant_matches(answer, variant["value"])
+    ]
+    return {
+        "point": config["text"],
+        "required": config["required"],
+        "matched": bool(matched_by),
+        "matched_by": matched_by,
+    }
+
+
+def point_matched(answer: str, point: Any) -> bool:
+    return bool(reasoning_point_match_detail(answer, point)["matched"])
 
 
 def point_matches(answer: str, point: Any) -> bool:
@@ -754,19 +840,30 @@ def evaluate_rule(
     pass_ratio: float,
 ) -> dict[str, Any]:
     expected = normalize_expected_reasoning_points(expected_points)
-    matched = [point["text"] for point in expected if point_matched(answer, point)]
-    missing = [point["text"] for point in expected if point["text"] not in matched]
+    point_details = [reasoning_point_match_detail(answer, point) for point in expected]
+    matched = [detail["point"] for detail in point_details if detail["matched"]]
+    missing = [detail["point"] for detail in point_details if not detail["matched"]]
     required_missing = [
-        point["text"]
-        for point in expected
-        if point["required"] and point["text"] not in matched
+        detail["point"]
+        for detail in point_details
+        if detail["required"] and not detail["matched"]
     ]
     score = len(matched) / len(expected) if expected else 0.0
-    required_count = max(1, math.ceil(len(expected) * pass_ratio)) if expected else 1
+    configured_pass_ratio = float(pass_ratio)
+    effective_pass_ratio = (
+        configured_pass_ratio
+        if configured_pass_ratio > 0.67
+        else RULE_PASS_RATIO_FLOOR
+    )
+    required_count = (
+        max(1, math.ceil((len(expected) * effective_pass_ratio) - 1e-9))
+        if expected
+        else 1
+    )
     completeness_blocker = has_completeness_blocker(answer)
-    rule_passed = score >= pass_ratio and not required_missing
+    rule_passed = len(matched) >= required_count
     failure_reason = ""
-    if required_missing:
+    if not rule_passed and required_missing:
         failure_reason = "missing_required_reasoning_points"
     if completeness_blocker:
         score = min(score, 0.4)
@@ -781,6 +878,18 @@ def evaluate_rule(
         "missing_reasoning_points": missing,
         "required_missing_reasoning_points": required_missing,
         "required_count": required_count,
+        "rule_score_detail": {
+            "scoring_method": "matched_points / expected_points",
+            "score": round(score, 4),
+            "configured_pass_ratio": round(configured_pass_ratio, 4),
+            "effective_pass_ratio": round(effective_pass_ratio, 4),
+            "expected_count": len(expected),
+            "matched_count": len(matched),
+            "missing_count": len(missing),
+            "required_count": required_count,
+            "completeness_blocker": completeness_blocker,
+            "points": point_details,
+        },
         "completeness_blocker": completeness_blocker,
         "rule_failure_reason": failure_reason,
     }
@@ -947,6 +1056,7 @@ def complete_output_fields(record: dict[str, Any]) -> dict[str, Any]:
         "judge_parse_error": "",
         "used_node_ids": [],
         "rule_score": None,
+        "rule_score_detail": {},
         "rule_passed": None,
         "judge_score": None,
         "judge_passed": None,
@@ -954,6 +1064,7 @@ def complete_output_fields(record: dict[str, Any]) -> dict[str, Any]:
         "missing_reasoning_points": [],
         "misconception_tags": [],
         "external_knowledge_suspicion": False,
+        "possible_rule_false_fail": False,
         "failure_type": "",
         "error_message": "",
         "created_at": now_iso(),
@@ -1016,6 +1127,44 @@ class LLMParseError(ValueError):
         self.request_id = request_id
 
 
+def normalize_chat_completions_url(base_url: str) -> str:
+    """Normalize an OpenAI-compatible base URL to the chat completions endpoint."""
+    cleaned = str(base_url or "").strip().rstrip("/")
+    if not cleaned:
+        return ""
+
+    parts = urlsplit(cleaned)
+    path_parts = [part for part in parts.path.split("/") if part]
+    if len(path_parts) >= 2 and path_parts[-2:] == ["chat", "completions"]:
+        normalized_path_parts = path_parts
+    elif path_parts and path_parts[-1] == "v1":
+        normalized_path_parts = [*path_parts, "chat", "completions"]
+    else:
+        normalized_path_parts = [*path_parts, "v1", "chat", "completions"]
+
+    normalized_path = "/" + "/".join(normalized_path_parts)
+    return urlunsplit((parts.scheme, parts.netloc, normalized_path, "", ""))
+
+
+def llm_request_error_message(
+    *,
+    status_code: int | str | None,
+    request_url: str,
+    response_text: str,
+    error: Exception | None = None,
+) -> str:
+    response_excerpt = str(response_text or "")[:500]
+    parts = [
+        "LLM request failed:",
+        f"status_code={status_code if status_code is not None else ''};",
+        f"request_url={request_url};",
+        f"response_text={response_excerpt}",
+    ]
+    if error is not None:
+        parts.append(f"error={type(error).__name__}: {error}")
+    return " ".join(parts)
+
+
 class OpenAICompatibleClient:
     def __init__(self, settings: dict[str, Any]) -> None:
         self.settings = settings
@@ -1029,6 +1178,7 @@ class OpenAICompatibleClient:
         base_url_env = str(settings.get("base_url_env") or "")
         self.api_key = os.getenv(api_key_env) if api_key_env else ""
         self.base_url = (os.getenv(base_url_env) if base_url_env else "") or ""
+        self.request_url = normalize_chat_completions_url(self.base_url)
 
     def is_configured(self) -> bool:
         return bool(self.model and self.api_key and self.base_url)
@@ -1037,12 +1187,12 @@ class OpenAICompatibleClient:
         self,
         messages: list[dict[str, str]],
         json_mode: bool = False,
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         if self.config_error:
             raise RuntimeError(self.config_error)
         if not self.is_configured():
             raise RuntimeError("LLM client is enabled but model, API key, or base URL is missing")
-        url = self.base_url.rstrip("/") + "/v1/chat/completions"
+        url = self.request_url
         payload: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
@@ -1060,13 +1210,45 @@ class OpenAICompatibleClient:
             },
             method="POST",
         )
+        status_code: int | None = None
+        raw_body = ""
         try:
             with request.urlopen(req, timeout=self.timeout_seconds) as response:
-                raw_body = response.read().decode("utf-8")
+                raw_body = response.read().decode("utf-8", errors="replace")
+                status_code = response.getcode()
                 request_id = response.headers.get("x-request-id", "")
                 data = json.loads(raw_body)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
-            raise RuntimeError(f"LLM request failed: {exc}") from exc
+        except HTTPError as exc:
+            try:
+                raw_body = exc.read().decode("utf-8", errors="replace")
+            except Exception:
+                raw_body = ""
+            raise RuntimeError(
+                llm_request_error_message(
+                    status_code=exc.code,
+                    request_url=url,
+                    response_text=raw_body,
+                    error=exc,
+                )
+            ) from exc
+        except (URLError, TimeoutError) as exc:
+            raise RuntimeError(
+                llm_request_error_message(
+                    status_code=status_code,
+                    request_url=url,
+                    response_text=raw_body,
+                    error=exc,
+                )
+            ) from exc
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                llm_request_error_message(
+                    status_code=status_code,
+                    request_url=url,
+                    response_text=raw_body,
+                    error=exc,
+                )
+            ) from exc
         try:
             content = str(data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError) as exc:
@@ -1074,6 +1256,8 @@ class OpenAICompatibleClient:
         return {
             "content": content,
             "request_id": str(data.get("id") or request_id or ""),
+            "request_url": url,
+            "status_code": status_code,
         }
 
     def chat(self, messages: list[dict[str, str]], json_mode: bool = False) -> str:
@@ -1081,13 +1265,64 @@ class OpenAICompatibleClient:
 
 
 def parse_json_object(raw_text: str) -> dict[str, Any]:
-    try:
-        parsed = json.loads(raw_text)
-    except json.JSONDecodeError as exc:
-        raise LLMParseError(f"LLM returned non-JSON output: {exc}", raw_text) from exc
-    if not isinstance(parsed, dict):
-        raise LLMParseError("LLM JSON output must be an object", raw_text)
-    return parsed
+    text = str(raw_text or "")
+    stripped = text.strip()
+    if not stripped:
+        raise LLMParseError("empty_response", text)
+
+    candidates = [stripped]
+    fenced = re.search(r"```(?:json)?\s*(.*?)`{3,}", stripped, flags=re.IGNORECASE | re.DOTALL)
+    if fenced:
+        candidates.append(fenced.group(1).strip())
+    extracted = extract_first_json_object(stripped)
+    if extracted:
+        candidates.append(extracted)
+
+    last_error: json.JSONDecodeError | None = None
+    seen: set[str] = set()
+    for candidate in candidates:
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError as exc:
+            last_error = exc
+            continue
+        if not isinstance(parsed, dict):
+            raise LLMParseError("LLM JSON output must be an object", text)
+        return parsed
+
+    detail = f": {last_error}" if last_error else ""
+    raise LLMParseError(f"LLM returned non-JSON output{detail}", text)
+
+
+def extract_first_json_object(text: str) -> str:
+    start = text.find("{")
+    while start != -1:
+        depth = 0
+        in_string = False
+        escaped = False
+        for index in range(start, len(text)):
+            char = text[index]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == '"':
+                    in_string = False
+                continue
+            if char == '"':
+                in_string = True
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start : index + 1]
+        start = text.find("{", start + 1)
+    return ""
 
 
 def coerce_float(value: Any, default: float = 0.0) -> float:

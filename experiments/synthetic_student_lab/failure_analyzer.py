@@ -230,6 +230,8 @@ def conflict_sample_lines(
         lines.append(
             f"   rule_score / judge_score: {record.get('rule_score')} / {record.get('judge_score')}"
         )
+        if record.get("possible_rule_false_fail") or record.get("failure_type") == "rule_fail_llm_pass":
+            lines.append("   review_label: possible_rule_false_fail")
         lines.append(
             "   matched_reasoning_points: "
             f"{format_points(record.get('matched_reasoning_points'))}"
