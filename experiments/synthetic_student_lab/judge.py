@@ -15,7 +15,6 @@ from common import (  # noqa: E402
     OpenAICompatibleClient,
     coerce_bool,
     coerce_float,
-    comparison_label,
     complete_output_fields,
     evaluate_rule,
     load_config,
@@ -28,12 +27,34 @@ from common import (  # noqa: E402
 
 
 MOCK_JUDGE_MODEL = "mock_judge_v0_3"
+VALID_CONFLICT_TYPES = {
+    "both_pass",
+    "both_fail",
+    "rule_pass_llm_fail",
+    "rule_fail_llm_pass",
+}
 
 
 def safe_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value]
+
+
+def safe_point_list(value: Any) -> list[Any]:
+    if not isinstance(value, list):
+        return []
+    return list(value)
+
+
+def compute_conflict_type(rule_passed: bool, judge_passed: bool) -> str:
+    if rule_passed and judge_passed:
+        return "both_pass"
+    if (not rule_passed) and (not judge_passed):
+        return "both_fail"
+    if rule_passed and (not judge_passed):
+        return "rule_pass_llm_fail"
+    return "rule_fail_llm_pass"
 
 
 def llm_judge_response(
@@ -100,7 +121,7 @@ def judge_records(config_path: str | None = None) -> Path:
 
     judged_records: list[dict[str, Any]] = []
     for record in records:
-        expected_points = safe_list(record.get("expected_reasoning_points"))
+        expected_points = safe_point_list(record.get("expected_reasoning_points"))
         traps = safe_list(record.get("misconception_traps"))
         rule_result = evaluate_rule(
             str(record.get("student_answer", "")),
@@ -141,9 +162,9 @@ def judge_records(config_path: str | None = None) -> Path:
         external_suspicion = bool(record.get("external_knowledge_suspicion")) or bool(
             judge_result.get("external_knowledge_suspicion")
         )
-        failure_type = comparison_label(
-            bool(rule_result["rule_passed"]),
-            bool(judge_result["judge_passed"]),
+        conflict_type = compute_conflict_type(
+            bool(rule_result.get("rule_passed", False)),
+            bool(judge_result.get("judge_passed", False)),
         )
 
         judged = complete_output_fields(
@@ -152,6 +173,11 @@ def judge_records(config_path: str | None = None) -> Path:
                 "judge_model": judge_model,
                 "rule_score": rule_result["rule_score"],
                 "rule_passed": rule_result["rule_passed"],
+                "rule_required_missing_reasoning_points": rule_result[
+                    "required_missing_reasoning_points"
+                ],
+                "rule_completeness_blocker": rule_result["completeness_blocker"],
+                "rule_failure_reason": rule_result["rule_failure_reason"],
                 "judge_score": judge_result["judge_score"],
                 "judge_passed": judge_result["judge_passed"],
                 "matched_reasoning_points": rule_result["matched_reasoning_points"],
@@ -160,7 +186,8 @@ def judge_records(config_path: str | None = None) -> Path:
                 "judge_missing_reasoning_points": judge_result["missing_reasoning_points"],
                 "misconception_tags": combined_tags,
                 "external_knowledge_suspicion": external_suspicion,
-                "failure_type": failure_type,
+                "conflict_type": conflict_type,
+                "failure_type": conflict_type,
                 "judge_failure_reason": judge_result.get("failure_reason", ""),
                 "error_message": error_message,
             }

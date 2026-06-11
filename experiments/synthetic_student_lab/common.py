@@ -326,6 +326,77 @@ def load_graph(path: str | Path) -> tuple[list[dict[str, Any]], str]:
     return [dict(node) for node in nodes], graph_version(path, data)
 
 
+def find_chain_definition(data: dict[str, Any], chain_id: str) -> dict[str, Any] | None:
+    chains = data.get("chains", [])
+    if isinstance(chains, dict):
+        chain = chains.get(chain_id)
+        return dict(chain) if isinstance(chain, dict) else None
+    if not isinstance(chains, list):
+        return None
+    for chain in chains:
+        if isinstance(chain, dict) and str(chain.get("id", "")) == chain_id:
+            return dict(chain)
+    return None
+
+
+def chain_definition_entries(chain: dict[str, Any]) -> list[Any]:
+    nodes = chain.get("nodes")
+    if isinstance(nodes, list) and nodes:
+        return nodes
+    node_ids = chain.get("node_ids")
+    if isinstance(node_ids, list) and node_ids:
+        return node_ids
+    return []
+
+
+def normalize_chain_definition_node(
+    entry: Any,
+    graph_by_id: dict[str, dict[str, Any]],
+    chain_id: str,
+    position: int,
+) -> dict[str, Any]:
+    if isinstance(entry, str):
+        if entry not in graph_by_id:
+            raise ValueError(f"chain_definitions.yaml references unknown node id: {entry}")
+        raw_node = dict(graph_by_id[entry])
+    elif isinstance(entry, dict):
+        node_id = str(entry.get("id", ""))
+        if not node_id:
+            raise ValueError("chain_definitions.yaml node entry is missing id")
+        raw_node = {**graph_by_id.get(node_id, {}), **entry}
+    else:
+        raise ValueError(f"Unsupported chain_definitions.yaml node entry: {entry!r}")
+
+    normalized = normalize_reasoning_node(raw_node, chain_id)
+    normalized["chain"] = chain_id
+    normalized["layer"] = position
+    return normalized
+
+
+def select_chain_definition_nodes(
+    graph_nodes: list[dict[str, Any]],
+    chain_id: str,
+    chain_definition_path: str | Path,
+) -> list[dict[str, Any]] | None:
+    resolved = resolve_path(chain_definition_path)
+    if not resolved.exists():
+        return None
+
+    data = load_yaml(resolved)
+    chain = find_chain_definition(data, chain_id)
+    if chain is None:
+        return None
+    entries = chain_definition_entries(chain)
+    if not entries:
+        raise ValueError(f"chain_definitions.yaml chain {chain_id!r} has no nodes or node_ids")
+
+    graph_by_id = {str(node.get("id", "")): dict(node) for node in graph_nodes}
+    return [
+        normalize_chain_definition_node(entry, graph_by_id, chain_id, index)
+        for index, entry in enumerate(entries, start=1)
+    ]
+
+
 def to_string_list(value: Any) -> list[str]:
     if value is None:
         return []
@@ -386,7 +457,17 @@ def select_chain_nodes(
     graph_nodes: list[dict[str, Any]],
     chain_id: str,
     allow_fallback: bool = True,
+    chain_definition_path: str | Path | None = None,
 ) -> tuple[list[dict[str, Any]], bool]:
+    definition_path = chain_definition_path or REPO_ROOT / "data" / "chain_definitions.yaml"
+    chain_definition_nodes = select_chain_definition_nodes(
+        graph_nodes,
+        chain_id,
+        definition_path,
+    )
+    if chain_definition_nodes:
+        return chain_definition_nodes, False
+
     chain_nodes = [
         normalize_reasoning_node(node, chain_id)
         for node in graph_nodes
@@ -469,6 +550,17 @@ def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
     return records
 
 
+COMPLETENESS_BLOCKERS = (
+    "不能完整判断",
+    "无法完整判断",
+    "不会判断",
+    "不能判断",
+    "不知道",
+    "只能背规则",
+    "只需要背规则",
+)
+
+
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", "", str(text).lower())
 
@@ -482,31 +574,106 @@ def point_tokens(point: str) -> list[str]:
     return tokens
 
 
-def point_matches(answer: str, point: str) -> bool:
+def reasoning_point_text(point: Any) -> str:
+    if isinstance(point, dict):
+        for key in ("text", "point", "reasoning_point", "expected", "description"):
+            value = point.get(key)
+            if value is not None and str(value).strip():
+                return str(value)
+        return ""
+    return str(point)
+
+
+def reasoning_point_aliases(point: Any) -> list[str]:
+    if not isinstance(point, dict):
+        return []
+    aliases = point.get("aliases", [])
+    if aliases is None:
+        return []
+    if isinstance(aliases, list):
+        return [str(alias) for alias in aliases if str(alias).strip()]
+    return [str(aliases)] if str(aliases).strip() else []
+
+
+def reasoning_point_required(point: Any) -> bool:
+    return bool(point.get("required")) if isinstance(point, dict) else False
+
+
+def normalize_reasoning_point(point: Any) -> dict[str, Any]:
+    return {
+        "text": reasoning_point_text(point).strip(),
+        "aliases": reasoning_point_aliases(point),
+        "required": reasoning_point_required(point),
+    }
+
+
+def normalize_expected_reasoning_points(points: list[Any]) -> list[dict[str, Any]]:
+    return [
+        config
+        for config in (normalize_reasoning_point(point) for point in points)
+        if config["text"]
+    ]
+
+
+def text_variant_matches(answer: str, variant: str) -> bool:
     normalized_answer = normalize_text(answer)
-    normalized_point = normalize_text(point)
+    normalized_point = normalize_text(variant)
     if normalized_point and normalized_point in normalized_answer:
         return True
-    tokens = point_tokens(point)
+    tokens = point_tokens(variant)
     return any(token in normalized_answer for token in tokens)
+
+
+def point_matched(answer: str, point: Any) -> bool:
+    config = normalize_reasoning_point(point)
+    variants = [config["text"], *config["aliases"]]
+    return any(text_variant_matches(answer, variant) for variant in variants if variant)
+
+
+def point_matches(answer: str, point: Any) -> bool:
+    return point_matched(answer, point)
+
+
+def has_completeness_blocker(answer: str) -> bool:
+    normalized_answer = normalize_text(answer)
+    return any(normalize_text(pattern) in normalized_answer for pattern in COMPLETENESS_BLOCKERS)
 
 
 def evaluate_rule(
     answer: str,
-    expected_points: list[str],
+    expected_points: list[Any],
     pass_ratio: float,
 ) -> dict[str, Any]:
-    expected = [str(point) for point in expected_points if str(point).strip()]
-    matched = [point for point in expected if point_matches(answer, point)]
-    missing = [point for point in expected if point not in matched]
+    expected = normalize_expected_reasoning_points(expected_points)
+    matched = [point["text"] for point in expected if point_matched(answer, point)]
+    missing = [point["text"] for point in expected if point["text"] not in matched]
+    required_missing = [
+        point["text"]
+        for point in expected
+        if point["required"] and point["text"] not in matched
+    ]
     score = len(matched) / len(expected) if expected else 0.0
     required_count = max(1, math.ceil(len(expected) * pass_ratio)) if expected else 1
+    completeness_blocker = has_completeness_blocker(answer)
+    rule_passed = score >= pass_ratio and not required_missing
+    failure_reason = ""
+    if required_missing:
+        failure_reason = "missing_required_reasoning_points"
+    if completeness_blocker:
+        score = min(score, 0.4)
+        rule_passed = False
+        failure_reason = "completeness_blocker"
+    elif not rule_passed and not failure_reason:
+        failure_reason = "below_threshold"
     return {
         "rule_score": round(score, 4),
-        "rule_passed": len(matched) >= required_count,
+        "rule_passed": rule_passed,
         "matched_reasoning_points": matched,
         "missing_reasoning_points": missing,
+        "required_missing_reasoning_points": required_missing,
         "required_count": required_count,
+        "completeness_blocker": completeness_blocker,
+        "rule_failure_reason": failure_reason,
     }
 
 
@@ -548,6 +715,8 @@ MISCONCEPTION_PATTERNS: dict[str, list[str]] = {
 def detect_misconception_tags(answer: str, traps: list[str] | None = None) -> list[str]:
     normalized = normalize_text(answer)
     tags = []
+    if has_completeness_blocker(answer):
+        tags.append("completeness_blocker")
     for tag, patterns in MISCONCEPTION_PATTERNS.items():
         if any(normalize_text(pattern) in normalized for pattern in patterns):
             tags.append(tag)
@@ -593,18 +762,24 @@ def semantic_point_matches(answer: str, point: str) -> bool:
 
 def mock_judge(
     answer: str,
-    expected_points: list[str],
+    expected_points: list[Any],
     traps: list[str],
     pass_ratio: float,
     condition: str,
 ) -> dict[str, Any]:
-    expected = [str(point) for point in expected_points if str(point).strip()]
+    expected = normalize_expected_reasoning_points(expected_points)
     matched = [
-        point
+        point["text"]
         for point in expected
-        if strict_point_matches(answer, point) or semantic_point_matches(answer, point)
+        if any(strict_point_matches(answer, variant) for variant in [point["text"], *point["aliases"]])
+        or semantic_point_matches(answer, point["text"])
     ]
-    missing = [point for point in expected if point not in matched]
+    missing = [point["text"] for point in expected if point["text"] not in matched]
+    required_missing = [
+        point["text"]
+        for point in expected
+        if point["required"] and point["text"] not in matched
+    ]
     score = len(matched) / len(expected) if expected else 0.0
     tags = detect_misconception_tags(answer, traps)
 
@@ -613,10 +788,14 @@ def mock_judge(
         tags.append("insufficient_materials")
     if condition == "hidden_transfer" and "rote_repetition" in tags:
         score = min(score, 0.4)
+    if required_missing:
+        score = min(score, 0.4)
+    if "completeness_blocker" in tags:
+        score = min(score, 0.4)
     if any(tag.endswith("_confusion") for tag in tags) or "trap_hit" in tags:
         score = min(score, 0.4)
 
-    passed = score >= pass_ratio
+    passed = score >= pass_ratio and not required_missing and "completeness_blocker" not in tags
     return {
         "judge_score": round(score, 4),
         "judge_passed": passed,

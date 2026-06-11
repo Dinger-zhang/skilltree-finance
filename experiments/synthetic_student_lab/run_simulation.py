@@ -23,6 +23,7 @@ from common import (  # noqa: E402
     now_iso,
     output_path,
     parse_json_object,
+    reasoning_point_text,
     select_chain_nodes,
     transfer_case_for_node,
     write_jsonl,
@@ -33,10 +34,10 @@ MOCK_STUDENT_MODEL = "mock_student_v0_3"
 MOCK_JUDGE_MODEL = "mock_judge_v0_3"
 
 
-def answer_from_points(points: list[str], prefix: str = "") -> str:
+def answer_from_points(points: list[Any], prefix: str = "") -> str:
     if not points:
         return prefix + "无法从当前材料推出。"
-    return prefix + "；".join(points) + "。"
+    return prefix + "；".join(reasoning_point_text(point) for point in points) + "。"
 
 
 def misconception_answer(node: dict[str, Any], condition: str) -> tuple[str, list[str]]:
@@ -81,7 +82,7 @@ def mock_student_response(
     persona: dict[str, Any],
     node: dict[str, Any],
     condition: str,
-    expected_points: list[str],
+    expected_points: list[Any],
 ) -> dict[str, Any]:
     persona_id = persona["id"]
 
@@ -177,11 +178,11 @@ def build_question_and_expectations(
     node: dict[str, Any],
     condition: str,
     cases_by_node: dict[str, list[dict[str, Any]]],
-) -> tuple[str, list[str], list[str], str]:
+) -> tuple[str, list[Any], list[str], str]:
     if condition == "hidden_transfer":
         case = transfer_case_for_node(node, cases_by_node)
         question = f"{case.get('case', '')}\n{case.get('question', '')}".strip()
-        expected_points = [str(point) for point in case.get("expected_reasoning_points", [])]
+        expected_points = list(case.get("expected_reasoning_points", []))
         traps = [str(trap) for trap in case.get("misconception_traps", [])]
         return question, expected_points, traps, str(case.get("id", ""))
     return (
@@ -195,12 +196,13 @@ def build_question_and_expectations(
 def run_simulation(config_path: str | None = None) -> Path:
     config = load_config(config_path)
     graph_nodes, graph_version_value = load_graph(config["graph_path"])
+    files = config.get("files", {})
     chain_nodes, fallback_used = select_chain_nodes(
         graph_nodes,
         config["chain_id"],
         bool(config.get("allow_graph_fallback", True)),
+        files.get("chain_definitions", config.get("chain_definitions_path", "data/chain_definitions.yaml")),
     )
-    files = config.get("files", {})
     personas = load_personas(files.get("personas", "experiments/synthetic_student_lab/personas.yaml"))
     cases_by_node = load_transfer_cases(
         files.get("transfer_cases", "experiments/synthetic_student_lab/transfer_cases.yaml")

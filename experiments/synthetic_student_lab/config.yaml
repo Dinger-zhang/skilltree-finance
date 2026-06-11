@@ -16,6 +16,7 @@ conditions:
   - hidden_transfer
 
 files:
+  chain_definitions: data/chain_definitions.yaml
   personas: experiments/synthetic_student_lab/personas.yaml
   transfer_cases: experiments/synthetic_student_lab/transfer_cases.yaml
   simulation_runs: simulation_runs.jsonl
