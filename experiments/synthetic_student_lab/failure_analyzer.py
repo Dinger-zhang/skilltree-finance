@@ -470,8 +470,11 @@ def course_suggestions(ranked_nodes: list[dict[str, Any]]) -> list[str]:
     return lines
 
 
-def generate_report(config_path: str | None = None) -> Path:
-    config = load_config(config_path)
+def generate_report(
+    config_path: str | None = None,
+    overrides: dict[str, Any] | None = None,
+) -> Path:
+    config = load_config(config_path, overrides)
     simulation_records = read_jsonl(output_path(config, "simulation_runs"))
     judge_records = read_jsonl(output_path(config, "judge_results"))
     sim_by_run = {record.get("run_id"): record for record in simulation_records}
@@ -656,12 +659,28 @@ def parse_args() -> argparse.Namespace:
         default=str(CURRENT_DIR / "config.yaml"),
         help="Path to config.yaml",
     )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--mock-mode", action="store_true", help="Use mock output directory defaults.")
+    mode.add_argument("--real-mode", action="store_true", help="Use real output directory defaults.")
+    parser.add_argument("--output-dir", help="Directory containing judge_results.jsonl.")
     return parser.parse_args()
+
+
+def args_to_overrides(args: argparse.Namespace) -> dict[str, Any]:
+    mock_mode = None
+    if args.mock_mode:
+        mock_mode = True
+    if args.real_mode:
+        mock_mode = False
+    return {
+        "mock_mode": mock_mode,
+        "output_dir": args.output_dir,
+    }
 
 
 def main() -> None:
     args = parse_args()
-    path = generate_report(args.config)
+    path = generate_report(args.config, args_to_overrides(args))
     print(f"Wrote failure report: {path}")
 
 

@@ -17,6 +17,8 @@ import yaml
 LAB_DIR = Path(__file__).resolve().parent
 REPO_ROOT = LAB_DIR.parents[1]
 B_CHAIN_ID = "B. 从交易到利润表"
+DEFAULT_MOCK_OUTPUT_DIR = LAB_DIR / "outputs" / "ssl_v0_3_minimal"
+DEFAULT_REAL_OUTPUT_DIR = LAB_DIR / "outputs" / "ssl_real_smoke"
 DEFAULT_CONDITIONS = (
     "no_course_baseline",
     "node_only",
@@ -255,8 +257,14 @@ REQUIRED_OUTPUT_FIELDS = (
     "student_persona",
     "student_model",
     "judge_model",
+    "student_request_id",
+    "judge_request_id",
     "question",
     "student_answer",
+    "student_raw_response",
+    "judge_raw_response",
+    "student_parse_error",
+    "judge_parse_error",
     "used_node_ids",
     "rule_score",
     "rule_passed",
@@ -289,7 +297,86 @@ def write_yaml(path: str | Path, data: dict[str, Any]) -> None:
         yaml.safe_dump(data, file, allow_unicode=True, sort_keys=False)
 
 
-def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
+def split_csv(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def apply_config_overrides(
+    config: dict[str, Any],
+    overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not overrides:
+        return config
+
+    if overrides.get("mock_mode") is not None:
+        config["mock_mode"] = bool(overrides["mock_mode"])
+    if overrides.get("output_dir"):
+        config["output_dir"] = str(overrides["output_dir"])
+    if overrides.get("max_nodes") is not None:
+        config["max_nodes"] = int(overrides["max_nodes"])
+
+    selected_node_ids = list(overrides.get("selected_node_ids") or [])
+    node_id = overrides.get("node_id")
+    if node_id:
+        selected_node_ids = [str(node_id)]
+    if selected_node_ids:
+        config["selected_node_ids"] = [str(item) for item in selected_node_ids]
+
+    for client_key, model_key in (
+        ("student_client", "student_model"),
+        ("judge_client", "judge_model"),
+    ):
+        if overrides.get(model_key):
+            client_config = config.setdefault(client_key, {})
+            client_config["model"] = str(overrides[model_key])
+            client_config["enabled"] = True
+
+    for client_key, override_key, setting_key in (
+        ("student_client", "student_api_key_env", "api_key_env"),
+        ("student_client", "student_base_url_env", "base_url_env"),
+        ("judge_client", "judge_api_key_env", "api_key_env"),
+        ("judge_client", "judge_base_url_env", "base_url_env"),
+    ):
+        if overrides.get(override_key):
+            config.setdefault(client_key, {})[setting_key] = str(overrides[override_key])
+
+    return config
+
+
+def finalize_runtime_config(config: dict[str, Any]) -> dict[str, Any]:
+    files = config.setdefault("files", {})
+    files.setdefault("chain_definitions", "data/chain_definitions.yaml")
+    files.setdefault("personas", "experiments/synthetic_student_lab/personas.yaml")
+    files.setdefault("transfer_cases", "experiments/synthetic_student_lab/transfer_cases.yaml")
+    files.setdefault("simulation_runs", "simulation_runs.jsonl")
+    files.setdefault("judge_results", "judge_results.jsonl")
+    files.setdefault("node_failure_report", "node_failure_report.md")
+
+    mock_mode = bool(config.get("mock_mode", True))
+    output_dir = resolve_path(config.get("output_dir", DEFAULT_MOCK_OUTPUT_DIR))
+    if not mock_mode and output_dir == DEFAULT_MOCK_OUTPUT_DIR:
+        config["output_dir"] = str(DEFAULT_REAL_OUTPUT_DIR)
+
+    for client_key in ("student_client", "judge_client"):
+        client_config = config.setdefault(client_key, {})
+        client_config.setdefault("enabled", True)
+        client_config.setdefault("provider", "openai_compatible")
+        client_config.setdefault("model", "")
+        client_config.setdefault("temperature", 0.0)
+        client_config.setdefault("timeout_seconds", 60)
+    config["student_client"].setdefault("api_key_env", "SSL_STUDENT_API_KEY")
+    config["student_client"].setdefault("base_url_env", "SSL_STUDENT_BASE_URL")
+    config["judge_client"].setdefault("api_key_env", "SSL_JUDGE_API_KEY")
+    config["judge_client"].setdefault("base_url_env", "SSL_JUDGE_BASE_URL")
+    return config
+
+
+def load_config(
+    config_path: str | Path | None = None,
+    overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     path = config_path or LAB_DIR / "config.yaml"
     config = load_yaml(path)
     config.setdefault("experiment_id", "ssl_v0_3_minimal")
@@ -298,7 +385,8 @@ def load_config(config_path: str | Path | None = None) -> dict[str, Any]:
     config.setdefault("pass_ratio", 0.6)
     config.setdefault("conditions", list(DEFAULT_CONDITIONS))
     config.setdefault("allow_graph_fallback", True)
-    return config
+    apply_config_overrides(config, overrides)
+    return finalize_runtime_config(config)
 
 
 def now_iso() -> str:
@@ -478,6 +566,27 @@ def select_chain_nodes(
     if not allow_fallback:
         raise ValueError(f"No nodes found with chain == {chain_id!r}")
     return [dict(node) for node in FALLBACK_B_NODES], True
+
+
+def selected_node_indexes(
+    chain_nodes: list[dict[str, Any]],
+    selected_node_ids: list[str] | None = None,
+    max_nodes: int | None = None,
+) -> list[int]:
+    id_to_index = {node["id"]: index for index, node in enumerate(chain_nodes)}
+    if selected_node_ids:
+        missing = [node_id for node_id in selected_node_ids if node_id not in id_to_index]
+        if missing:
+            raise ValueError(f"selected_node_ids not found in chain: {', '.join(missing)}")
+        indexes = [id_to_index[node_id] for node_id in selected_node_ids]
+    else:
+        indexes = list(range(len(chain_nodes)))
+
+    if max_nodes is not None:
+        if max_nodes <= 0:
+            raise ValueError("max_nodes must be greater than 0")
+        indexes = indexes[:max_nodes]
+    return indexes
 
 
 def load_personas(path: str | Path) -> list[dict[str, Any]]:
@@ -828,8 +937,14 @@ def complete_output_fields(record: dict[str, Any]) -> dict[str, Any]:
         "student_persona": "",
         "student_model": "",
         "judge_model": "",
+        "student_request_id": "",
+        "judge_request_id": "",
         "question": "",
         "student_answer": "",
+        "student_raw_response": "",
+        "judge_raw_response": "",
+        "student_parse_error": "",
+        "judge_parse_error": "",
         "used_node_ids": [],
         "rule_score": None,
         "rule_passed": None,
@@ -888,12 +1003,28 @@ def deterministic_run_id(
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
 
 
+class LLMParseError(ValueError):
+    def __init__(
+        self,
+        message: str,
+        raw_response: str,
+        request_id: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.raw_response = raw_response
+        self.parse_error = message
+        self.request_id = request_id
+
+
 class OpenAICompatibleClient:
     def __init__(self, settings: dict[str, Any]) -> None:
         self.settings = settings
         self.model = str(settings.get("model") or "")
         self.temperature = float(settings.get("temperature", 0.0))
         self.timeout_seconds = int(settings.get("timeout_seconds", 60))
+        self.config_error = ""
+        if str(settings.get("api_key") or "").strip():
+            self.config_error = "Do not put API keys in config; set the configured api_key_env instead"
         api_key_env = str(settings.get("api_key_env") or "")
         base_url_env = str(settings.get("base_url_env") or "")
         self.api_key = os.getenv(api_key_env) if api_key_env else ""
@@ -902,7 +1033,13 @@ class OpenAICompatibleClient:
     def is_configured(self) -> bool:
         return bool(self.model and self.api_key and self.base_url)
 
-    def chat(self, messages: list[dict[str, str]], json_mode: bool = False) -> str:
+    def chat_completion(
+        self,
+        messages: list[dict[str, str]],
+        json_mode: bool = False,
+    ) -> dict[str, str]:
+        if self.config_error:
+            raise RuntimeError(self.config_error)
         if not self.is_configured():
             raise RuntimeError("LLM client is enabled but model, API key, or base URL is missing")
         url = self.base_url.rstrip("/") + "/v1/chat/completions"
@@ -925,22 +1062,31 @@ class OpenAICompatibleClient:
         )
         try:
             with request.urlopen(req, timeout=self.timeout_seconds) as response:
-                data = json.loads(response.read().decode("utf-8"))
+                raw_body = response.read().decode("utf-8")
+                request_id = response.headers.get("x-request-id", "")
+                data = json.loads(raw_body)
         except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as exc:
             raise RuntimeError(f"LLM request failed: {exc}") from exc
         try:
-            return str(data["choices"][0]["message"]["content"])
+            content = str(data["choices"][0]["message"]["content"])
         except (KeyError, IndexError, TypeError) as exc:
             raise RuntimeError("LLM response missing choices[0].message.content") from exc
+        return {
+            "content": content,
+            "request_id": str(data.get("id") or request_id or ""),
+        }
+
+    def chat(self, messages: list[dict[str, str]], json_mode: bool = False) -> str:
+        return self.chat_completion(messages, json_mode=json_mode)["content"]
 
 
 def parse_json_object(raw_text: str) -> dict[str, Any]:
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        raise ValueError("LLM returned non-JSON output") from exc
+        raise LLMParseError(f"LLM returned non-JSON output: {exc}", raw_text) from exc
     if not isinstance(parsed, dict):
-        raise ValueError("LLM JSON output must be an object")
+        raise LLMParseError("LLM JSON output must be an object", raw_text)
     return parsed
 
 

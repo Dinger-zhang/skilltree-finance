@@ -4,7 +4,7 @@ chain_id: "B. 从交易到利润表"
 output_dir: experiments/synthetic_student_lab/outputs/ssl_v0_3_minimal
 
 # Default is fully offline and deterministic. Set mock_mode=false only after
-# configuring both student and judge clients explicitly.
+# configuring both student and judge models plus the environment variables below.
 mock_mode: true
 allow_graph_fallback: true
 pass_ratio: 0.6
@@ -24,7 +24,7 @@ files:
   node_failure_report: node_failure_report.md
 
 student_client:
-  enabled: false
+  enabled: true
   provider: openai_compatible
   model: ""
   api_key_env: SSL_STUDENT_API_KEY
@@ -33,7 +33,7 @@ student_client:
   timeout_seconds: 60
 
 judge_client:
-  enabled: false
+  enabled: true
   provider: openai_compatible
   model: ""
   api_key_env: SSL_JUDGE_API_KEY

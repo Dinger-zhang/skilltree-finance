@@ -12,6 +12,7 @@ if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
 from common import (  # noqa: E402
+    LLMParseError,
     OpenAICompatibleClient,
     complete_output_fields,
     deterministic_run_id,
@@ -25,6 +26,8 @@ from common import (  # noqa: E402
     parse_json_object,
     reasoning_point_text,
     select_chain_nodes,
+    selected_node_indexes,
+    split_csv,
     transfer_case_for_node,
     write_jsonl,
 )
@@ -158,19 +161,26 @@ def llm_student_response(
             "misconception_tags": ["string"],
         },
     }
-    raw = client.chat(
+    completion = client.chat_completion(
         [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
         ],
         json_mode=True,
     )
-    parsed = parse_json_object(raw)
+    raw = completion["content"]
+    try:
+        parsed = parse_json_object(raw)
+    except LLMParseError as exc:
+        raise LLMParseError(exc.parse_error, exc.raw_response, completion.get("request_id", "")) from exc
     return {
         "student_answer": str(parsed.get("student_answer", "")),
         "used_node_ids": parsed.get("used_node_ids", []),
         "external_knowledge_suspicion": bool(parsed.get("external_knowledge_suspicion", False)),
         "misconception_tags": parsed.get("misconception_tags", []),
+        "student_raw_response": raw,
+        "student_parse_error": "",
+        "student_request_id": completion.get("request_id", ""),
     }
 
 
@@ -193,8 +203,11 @@ def build_question_and_expectations(
     )
 
 
-def run_simulation(config_path: str | None = None) -> Path:
-    config = load_config(config_path)
+def run_simulation(
+    config_path: str | None = None,
+    overrides: dict[str, Any] | None = None,
+) -> Path:
+    config = load_config(config_path, overrides)
     graph_nodes, graph_version_value = load_graph(config["graph_path"])
     files = config.get("files", {})
     chain_nodes, fallback_used = select_chain_nodes(
@@ -208,6 +221,11 @@ def run_simulation(config_path: str | None = None) -> Path:
         files.get("transfer_cases", "experiments/synthetic_student_lab/transfer_cases.yaml")
     )
     conditions = [str(condition) for condition in config.get("conditions", [])]
+    node_indexes = selected_node_indexes(
+        chain_nodes,
+        [str(item) for item in config.get("selected_node_ids", [])],
+        int(config["max_nodes"]) if config.get("max_nodes") is not None else None,
+    )
     mock_mode = bool(config.get("mock_mode", True))
 
     student_settings = config.get("student_client", {})
@@ -232,7 +250,8 @@ def run_simulation(config_path: str | None = None) -> Path:
 
     for persona in personas:
         persona_id = str(persona["id"])
-        for node_index, node in enumerate(chain_nodes):
+        for node_index in node_indexes:
+            node = chain_nodes[node_index]
             for condition in conditions:
                 materials, allowed_used_node_ids = materials_for_condition(
                     chain_nodes,
@@ -252,6 +271,9 @@ def run_simulation(config_path: str | None = None) -> Path:
                     condition,
                 )
                 error_message = ""
+                student_raw_response = ""
+                student_parse_error = ""
+                student_request_id = ""
                 if student_client:
                     try:
                         response = llm_student_response(
@@ -262,6 +284,20 @@ def run_simulation(config_path: str | None = None) -> Path:
                             materials,
                             prompt_path,
                         )
+                        student_raw_response = str(response.get("student_raw_response", ""))
+                        student_parse_error = str(response.get("student_parse_error", ""))
+                        student_request_id = str(response.get("student_request_id", ""))
+                    except LLMParseError as exc:
+                        response = {
+                            "student_answer": "",
+                            "used_node_ids": [],
+                            "external_knowledge_suspicion": False,
+                            "misconception_tags": [],
+                        }
+                        student_raw_response = exc.raw_response
+                        student_parse_error = exc.parse_error
+                        student_request_id = exc.request_id
+                        error_message = f"student_parse_error: {exc.parse_error}"
                     except Exception as exc:  # noqa: BLE001 - recorded in experiment output.
                         response = {
                             "student_answer": "",
@@ -295,6 +331,9 @@ def run_simulation(config_path: str | None = None) -> Path:
                         "judge_model": judge_model,
                         "question": question,
                         "student_answer": str(response.get("student_answer", "")),
+                        "student_request_id": student_request_id,
+                        "student_raw_response": student_raw_response,
+                        "student_parse_error": student_parse_error,
                         "used_node_ids": used_node_ids,
                         "expected_reasoning_points": expected_points,
                         "misconception_traps": traps,
@@ -322,12 +361,42 @@ def parse_args() -> argparse.Namespace:
         default=str(CURRENT_DIR / "config.yaml"),
         help="Path to config.yaml",
     )
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--mock-mode", action="store_true", help="Force offline mock mode.")
+    mode.add_argument("--real-mode", action="store_true", help="Use configured real LLM clients.")
+    parser.add_argument("--output-dir", help="Directory for generated simulation output.")
+    parser.add_argument("--node-id", help="Run only one node id.")
+    parser.add_argument("--selected-node-ids", help="Comma-separated node ids to run.")
+    parser.add_argument("--max-nodes", type=int, help="Limit the first N selected chain nodes.")
+    parser.add_argument("--student-model", help="Override student model name.")
+    parser.add_argument("--judge-model", help="Override judge model recorded in simulation rows.")
+    parser.add_argument("--student-api-key-env", help="Environment variable name for student API key.")
+    parser.add_argument("--student-base-url-env", help="Environment variable name for student base URL.")
     return parser.parse_args()
+
+
+def args_to_overrides(args: argparse.Namespace) -> dict[str, Any]:
+    mock_mode = None
+    if args.mock_mode:
+        mock_mode = True
+    if args.real_mode:
+        mock_mode = False
+    return {
+        "mock_mode": mock_mode,
+        "output_dir": args.output_dir,
+        "node_id": args.node_id,
+        "selected_node_ids": split_csv(args.selected_node_ids),
+        "max_nodes": args.max_nodes,
+        "student_model": args.student_model,
+        "judge_model": args.judge_model,
+        "student_api_key_env": args.student_api_key_env,
+        "student_base_url_env": args.student_base_url_env,
+    }
 
 
 def main() -> None:
     args = parse_args()
-    path = run_simulation(args.config)
+    path = run_simulation(args.config, args_to_overrides(args))
     print(f"Wrote simulation runs: {path}")
 
 
