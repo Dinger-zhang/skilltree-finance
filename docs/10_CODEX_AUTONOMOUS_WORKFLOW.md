@@ -110,3 +110,43 @@ human_review_samples.jsonl
 ```
 
 派生报告可以重新生成，但原始 JSONL 不应修改。
+
+## 9. 当前阶段 Codex 执行边界（2026-06-12）
+
+当前 repaired baseline 与 enhanced scorer v2 已验收通过。Codex 当前任务不再是继续修 scorer，而是根据人工批准，对 3 个课程节点做小范围 patch。
+
+### 9.1 当前允许
+
+```text
+1. 只修改 data/knowledge_graph.yaml 中：
+   - accrual_vs_cash
+   - net_profit
+   - gross_margin
+2. 运行 compileall；
+3. 运行 enhanced scorer 测试；
+4. 输出 git diff --stat；
+5. 输出 git diff data/knowledge_graph.yaml；
+6. 更新 docs/11_CURRENT_STAGE.md 的阶段记录。
+```
+
+### 9.2 当前禁止
+
+```text
+1. 修改其他课程节点；
+2. 修改 app.py / pages / 主流程；
+3. 修改 judge prompt、persona、transfer_cases；
+4. 调用真实 API；
+5. 自动运行 after_patch；
+6. 覆盖 ssl_v0_3_real_b_chain_001_repaired；
+7. commit / push；
+8. 安装新依赖；
+9. 输出 API Key。
+```
+
+### 9.3 当前完成后必须暂停
+
+Codex 完成 3 个节点 patch 后，必须暂停等待人工审核。只有人工确认 `git diff data/knowledge_graph.yaml` 合格后，才能进入：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch/
+```

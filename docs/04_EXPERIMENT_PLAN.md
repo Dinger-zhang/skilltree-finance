@@ -1,6 +1,6 @@
 # 实验验证计划
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 实验目标
 
@@ -502,4 +502,73 @@ Regression Damage
 3. 回归测试能发现候选修改的副作用。
 4. API 成本可控。
 5. 至少部分模拟发现的问题能被真实学生试跑印证。
+```
+
+## 18. Synthetic Student Lab 当前实验记录（2026-06-12）
+
+### 18.1 repaired baseline
+
+B 链真实实验已完成并修复 bad records。当前有效 before baseline 为：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_001_repaired/
+```
+
+检查结果：
+
+```text
+simulation_runs.jsonl rows: 96
+judge_results.jsonl rows: 96
+run_id one_to_one: True
+error_message: 0
+student_answer empty: 0
+```
+
+### 18.2 enhanced scorer v2
+
+增强规则评分器 v2 已通过 sanity tests：
+
+```text
+pytest: 5 passed
+conclusion_status: PASS
+```
+
+关键指标：
+
+```text
+old_rule_score_avg: 0.1693
+enhanced_rule_score_avg: 0.5380
+judge_score_avg: 0.5553
+old_rule_fail_llm_pass: 43
+enhanced_rule_fail_llm_pass: 13
+```
+
+### 18.3 当前课程修改候选
+
+基于模拟结果、LLM judge、enhanced scorer 与人工复核，当前只建议小修 3 个节点：
+
+```text
+1. accrual_vs_cash：防止权责发生制/现金制定义反转；
+2. net_profit：补充净利润形成机制与现金差异机制；
+3. gross_margin：补充毛利、净利润、现金之间的边界。
+```
+
+### 18.4 after_patch 实验原则
+
+课程 patch 经人工审核后，再运行：
+
+```text
+before: ssl_v0_3_real_b_chain_001_repaired
+after:  ssl_v0_3_real_b_chain_002_after_patch
+```
+
+对比时不能只看单一通过率，应同时看：
+
+```text
+LLM judge 通过率；
+enhanced rule scorer 通过率；
+hidden_transfer 是否下降；
+指定 3 个节点是否改善；
+是否出现新的 false pass / false fail；
+人工抽查是否支持指标变化。
 ```

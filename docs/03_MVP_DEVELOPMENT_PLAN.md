@@ -1,6 +1,6 @@
 # MVP 开发计划与 Codex 项目管理
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 当前开发目标
 
@@ -644,4 +644,47 @@ created_at
 2. 隐藏迁移题表现不下降。
 3. 真实学生试跑中至少能观察到部分模拟学生提前发现的问题。
 4. 每次有效改进的 API 成本可统计、可控制。
+```
+
+## 13. 当前 Synthetic Student Lab 进度同步（2026-06-12）
+
+当前工程推进已经超过“v0.3 最小实验框架设计”阶段，进入 **repaired baseline + enhanced scorer v2 已验收通过，准备课程三点 patch** 阶段。
+
+已完成：
+
+```text
+1. 完整 B 链真实实验：96 条 simulation / judge 记录；
+2. bad records targeted retry；
+3. repaired baseline：ssl_v0_3_real_b_chain_001_repaired；
+4. human review 样本抽取与人工标注；
+5. enhanced rule scorer v2；
+6. test_enhanced_rule_scorer.py：5 个 sanity tests 全部通过；
+7. enhanced_rule_score_report.md：conclusion_status = PASS。
+```
+
+当前有效 baseline：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_001_repaired/
+```
+
+当前推荐下一步：
+
+```text
+只修改 data/knowledge_graph.yaml 中 3 个节点：
+- accrual_vs_cash
+- net_profit
+- gross_margin
+
+修改后先人工审核 diff，再运行 after_patch 对比实验。
+```
+
+当前 Codex 边界：
+
+```text
+可以在用户批准后修改指定 3 个节点；
+不得自动修改其他课程节点；
+不得运行真实 after_patch；
+不得改变 judge / persona / transfer_cases；
+不得覆盖历史实验输出。
 ```

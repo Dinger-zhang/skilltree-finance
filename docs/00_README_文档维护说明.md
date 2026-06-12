@@ -1,6 +1,6 @@
 # SkillTree Finance 文档维护说明
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 为什么要维护这些文档
 
@@ -139,3 +139,24 @@
 4. 每次版本变化都要写清楚：从什么变成什么，原因是什么。
 5. 以 `01_PROJECT_CONTEXT.md` 作为项目上下文入口。
 6. 以 `06_DECISION_LOG_AND_OPEN_QUESTIONS.md` 作为项目记忆和问题池。
+
+## 6. 2026-06-12 文档同步说明
+
+本次同步的核心变化：
+
+```text
+1. Synthetic Student Lab repaired baseline 已验收通过；
+2. enhanced rule scorer v2 已验收通过；
+3. 当前阶段从“完整 B 链真实实验”推进为“课程三点小修补”；
+4. 下一步只允许修改 accrual_vs_cash、net_profit、gross_margin；
+5. after_patch 实验必须等待人工审核 diff 后再运行。
+```
+
+下次继续对话时，优先上传或参考：
+
+```text
+AGENTS.md
+docs/11_CURRENT_STAGE.md
+docs/10_CODEX_AUTONOMOUS_WORKFLOW.md
+docs/09_SYNTHETIC_STUDENT_LAB_PLAN.md
+```

@@ -1,6 +1,6 @@
 # Synthetic Student Lab：模拟学生学习实验室计划
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 结论
 
@@ -390,3 +390,80 @@ Regression Damage
 一句话：
 
 > Synthetic Student Lab 是很有潜力的中期核心模块，但当前应先作为离线课程质检器，而不是立即做成无限后台自治优化系统。
+
+## 17. 当前实现与阶段结论（2026-06-12）
+
+### 17.1 当前已实现内容
+
+当前 Synthetic Student Lab 已完成最小真实实验闭环：
+
+```text
+1. run_simulation.py：支持完整 B 链真实 simulation；
+2. judge.py：支持真实 judge；
+3. check_ssl_outputs.py：支持输出完整性检查；
+4. inspect_ssl_issues.py / human_review 样本抽取；
+5. repair_bad_records.py：支持 bad records targeted retry；
+6. rescore_with_enhanced_rules.py：支持 enhanced rule scorer；
+7. test_enhanced_rule_scorer.py：覆盖关键 sanity tests。
+```
+
+### 17.2 repaired baseline
+
+当前有效 before baseline：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_001_repaired/
+```
+
+该 baseline 已确认：
+
+```text
+96 条 simulation / judge 记录；
+3 个 persona 分布均衡；
+4 个 condition 分布均衡；
+8 个 B 链节点均覆盖；
+error_message = 0；
+empty student_answer = 0。
+```
+
+### 17.3 enhanced scorer v2 结论
+
+v2 的目标不是让分数越高越好，而是减少旧规则评分器的同义表达漏判，并避免 v1 出现的过宽 false pass。
+
+当前结果：
+
+```text
+old_rule_fail_llm_pass: 43 → enhanced_rule_fail_llm_pass: 13
+old_rule_score_avg: 0.1693 → enhanced_rule_score_avg: 0.5380
+judge_score_avg: 0.5553
+sanity tests: 5 passed
+conclusion_status: PASS
+```
+
+### 17.4 当前暴露出的课程问题候选
+
+当前最值得修改的 3 个节点：
+
+```text
+accrual_vs_cash：权责发生制与现金制混淆，尤其是定义反转、未收款/未付款误解；
+net_profit：只背“净利润不等于现金”，缺少净利润形成与现金差异机制；
+gross_margin：毛利率高、净利润高、现金充足之间的边界混淆。
+```
+
+### 17.5 当前闸门
+
+可以进入：
+
+```text
+课程三点小修补 → 人工审核 diff → after_patch 对比实验
+```
+
+暂不进入：
+
+```text
+自动 patch generator；
+后台长期运行；
+5 条链全量实验；
+用模拟学生结果替代真实学生实验；
+自动合并知识图谱修改。
+```

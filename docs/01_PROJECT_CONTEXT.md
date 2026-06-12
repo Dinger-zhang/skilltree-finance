@@ -1,6 +1,6 @@
 # SkillTree Finance 项目总览与上下文
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 项目一句话定义
 
@@ -196,3 +196,24 @@ Synthetic Student Lab：模拟学生学习过程，压力测试课程结构。
 因此，项目当前新形成的中期产品判断是：
 
 > SkillTree 不仅要能教学生，还要能模拟学生学习过程，持续发现课程结构问题，并辅助教师迭代知识图谱与推理链。
+
+## 11. 当前 Synthetic Student Lab 进展同步（2026-06-12）
+
+当前 Synthetic Student Lab 已完成 B 链真实实验 repaired baseline，并完成 enhanced rule scorer v2 验收。
+
+阶段结论：
+
+```text
+该模块已证明可以产出可审计的课程质检数据；
+旧规则评分器存在明显同义表达漏判；
+enhanced scorer v2 已基本缓解评分器问题；
+当前可以进入 3 个课程节点的小范围 patch。
+```
+
+有效 before baseline：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_001_repaired/
+```
+
+当前仍需坚持：Synthetic Student Lab 是课程质检工具，不是自动自治改课系统；最终学习效果仍需要真实学生试用验证。

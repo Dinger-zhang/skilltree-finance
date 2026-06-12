@@ -1,6 +1,6 @@
 # 决策日志与待解决问题
 
-最后更新：2026-06-07
+最后更新：2026-06-12
 
 ## 1. 已确认的重要决策
 
@@ -464,4 +464,66 @@ v0.5：受控节点内 AI 助教
 LLM judge 是否比规则评分更可靠？
 模拟发现的问题是否能被真实学生试跑印证？
 候选修改是否会提高真实学习效果，而不是只提高模拟分数？
+```
+
+### 决策 12：Synthetic Student Lab repaired baseline 与 enhanced scorer v2 通过验收
+
+时间：2026-06-12
+
+依据：
+
+```text
+1. B 链真实实验 repaired baseline 已达到 96 条记录；
+2. simulation_runs 与 judge_results run_id 一一对应；
+3. error_message = 0；
+4. empty student_answer = 0；
+5. enhanced scorer v2 sanity tests：5 passed；
+6. enhanced_rule_score_report.md：conclusion_status = PASS。
+```
+
+关键指标：
+
+```text
+old_rule_score_avg: 0.1693
+enhanced_rule_score_avg: 0.5380
+judge_score_avg: 0.5553
+old_rule_fail_llm_pass: 43
+enhanced_rule_fail_llm_pass: 13
+```
+
+决策：
+
+```text
+repaired baseline 可作为 before baseline；
+enhanced scorer v2 可作为后续对比实验的辅助评分器；
+后续课程 patch 不应只根据 enhanced score 判断，应结合 LLM judge 与人工抽查。
+```
+
+### 决策 13：进入课程三点小修补阶段
+
+时间：2026-06-12
+
+基于人工复核与实验报告，当前只允许小范围修改 3 个节点：
+
+```text
+1. accrual_vs_cash
+2. net_profit
+3. gross_margin
+```
+
+原因：
+
+```text
+accrual_vs_cash：权责发生制与现金制混淆严重；
+net_profit：学生只会背“净利润不等于现金”，但解释不出机制；
+gross_margin：学生混淆毛利、净利润与现金。
+```
+
+禁止：
+
+```text
+自动大规模改 knowledge_graph.yaml；
+修改 judge / persona / transfer_cases 来让指标变好；
+未经人工审核直接运行 after_patch；
+用模拟学生实验替代真实学生试用。
 ```
