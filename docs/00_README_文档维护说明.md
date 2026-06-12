@@ -95,6 +95,23 @@
 - `08_LLM_API_ENHANCEMENT_PLAN.md`
 - `09_SYNTHETIC_STUDENT_LAB_PLAN.md`
 
+### 情况 H：讨论 Codex 自主化、自动推进和长期工程协作
+
+建议上传或让 Codex 优先读取：
+
+1. `AGENTS.md`
+2. `docs/10_CODEX_AUTONOMOUS_WORKFLOW.md`
+3. `docs/11_CURRENT_STAGE.md`
+4. `docs/03_MVP_DEVELOPMENT_PLAN.md`
+5. `docs/09_SYNTHETIC_STUDENT_LAB_PLAN.md`
+
+用途：
+
+- 判断当前 Codex 是否应该继续自动推进；
+- 判断哪些动作需要人工批准；
+- 判断当前阶段是否完成；
+- 判断实验输出是否足够进入下一阶段。
+
 ## 4. 每次对话结束后如何更新
 
 建议在每轮重要对话结束时，让 AI 做三件事：
