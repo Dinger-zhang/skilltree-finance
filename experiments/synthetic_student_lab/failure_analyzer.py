@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -436,6 +437,166 @@ def typical_answer_snippets_text(node: dict[str, Any]) -> str:
     return "；".join(snippets) or "-"
 
 
+def split_answer_clauses(answer: str) -> list[str]:
+    clauses = []
+    for clause in re.split(r"[。！？!?；;\n]+", str(answer)):
+        cleaned = " ".join(clause.split())
+        if 4 <= len(cleaned) <= 80:
+            clauses.append(cleaned)
+    return clauses
+
+
+def point_hint_terms(point: str) -> list[str]:
+    point_text = str(point)
+    hints = []
+    if "利润表" in point_text or "经营成果" in point_text:
+        hints.extend(["利润表", "经营成果", "收入、成本、费用", "收入成本费用"])
+    if "销售商品" in point_text or "提供服务" in point_text or "收入" in point_text:
+        hints.extend(["销售商品", "提供服务", "卖咖啡", "出售咖啡", "经营收入", "营业收入"])
+    if "借款" in point_text or "筹资" in point_text or "营业收入" in point_text:
+        hints.extend(["借款", "贷款", "资金来源", "筹资", "融资", "不是营业收入", "不是经营收入"])
+    if "现金" in point_text or "收款" in point_text:
+        hints.extend(["现金", "收款", "收到钱", "付款", "现金流入"])
+    if "应收账款" in point_text:
+        hints.extend(["应收账款", "应收", "后续付款", "以后付款"])
+    return hints
+
+
+def candidate_aliases_for_point(point: str, answer: str) -> list[str]:
+    hints = point_hint_terms(point)
+    candidates = []
+    for clause in split_answer_clauses(answer):
+        normalized_clause = clause.replace(" ", "")
+        if hints and not any(term.replace(" ", "") in normalized_clause for term in hints):
+            continue
+        candidates.append(clause)
+    if not candidates:
+        candidates = split_answer_clauses(answer)[:2]
+    return candidates
+
+
+def suggested_aliases_for_point(point: str, answer: str) -> list[str]:
+    point_text = str(point)
+    patterns = []
+    if "利润表" in point_text or "经营成果" in point_text:
+        patterns.extend(
+            [
+                "利润表记录的是经营成果",
+                "利润表记录经营成果",
+                "重点看收入、成本、费用",
+                "重点看收入成本费用",
+            ]
+        )
+    if "销售商品" in point_text or "提供服务" in point_text or "收入" in point_text:
+        patterns.extend(
+            [
+                "不是来自销售商品或提供服务",
+                "不是销售商品或提供服务",
+                "银行借款不是来自销售商品或提供服务",
+                "卖咖啡是销售商品",
+                "出售咖啡属于销售商品",
+                "卖咖啡的收入可能进入利润表",
+                "销售商品，可能进入利润表",
+            ]
+        )
+    if "借款" in point_text or "筹资" in point_text or "营业收入" in point_text:
+        patterns.extend(
+            [
+                "银行借款是资金来源变化",
+                "借款是资金来源变化",
+                "贷款只是资金来源变化",
+                "贷款不是营业收入",
+                "借款不是经营收入",
+                "不是营业收入",
+                "不是经营收入",
+                "不应作为营业收入",
+            ]
+        )
+    if "现金" in point_text or "收款" in point_text:
+        patterns.extend(
+            [
+                "现金要等到客户付款时才增加",
+                "现金不变",
+                "现金还没进来",
+                "收入确认不一定等于收到现金",
+                "客户后续付款",
+                "赊销导致现金流入延后",
+            ]
+        )
+
+    normalized_answer = answer.replace(" ", "")
+    found = [
+        pattern
+        for pattern in patterns
+        if pattern.replace(" ", "") in normalized_answer
+    ]
+    return found
+
+
+def unique_limited(items: list[str], limit: int) -> list[str]:
+    unique = []
+    seen = set()
+    for item in items:
+        cleaned = str(item).strip()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        unique.append(cleaned)
+        if len(unique) >= limit:
+            break
+    return unique
+
+
+def false_fail_rule_suggestion_lines(records: list[dict[str, Any]]) -> list[str]:
+    if not records:
+        return []
+
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        grouped[str(record.get("node_id", ""))].append(record)
+
+    lines = ["", "### 评分规则修改建议"]
+    lines.append(
+        "以下节点存在 `rule_fail_llm_pass`：LLM judge 认为答案覆盖了要点，"
+        "但规则评分未命中。这里应优先理解为评分规则或 aliases 需要增强，"
+        "不能直接判定课程内容错误。"
+    )
+
+    for node_id, node_records in sorted(grouped.items()):
+        node_title = str(node_records[0].get("node_title", ""))
+        missing_counter: Counter[str] = Counter()
+        aliases_by_point: dict[str, list[str]] = defaultdict(list)
+        suggested_aliases_by_point: dict[str, list[str]] = defaultdict(list)
+        for record in node_records:
+            missing_points = [
+                str(point)
+                for point in record.get("missing_reasoning_points", [])
+                if str(point).strip()
+            ]
+            missing_counter.update(missing_points)
+            for point in missing_points:
+                answer = str(record.get("student_answer", ""))
+                aliases_by_point[point].extend(
+                    candidate_aliases_for_point(point, answer)
+                )
+                suggested_aliases_by_point[point].extend(suggested_aliases_for_point(point, answer))
+
+        lines.append("")
+        lines.append(f"- node_id: `{node_id}` {node_title}".rstrip())
+        lines.append(f"- 失败样本数量: {len(node_records)}")
+        lines.append(f"- 未命中的 expected_reasoning_points: {counter_summary(missing_counter, 6)}")
+        for point, _count in missing_counter.most_common(6):
+            expressions = unique_limited(aliases_by_point.get(point, []), 5)
+            expression_text = "；".join(expressions) if expressions else "-"
+            suggested_aliases = unique_limited(suggested_aliases_by_point.get(point, []), 8)
+            if not suggested_aliases:
+                suggested_aliases = unique_limited(expressions, 5)
+            suggested_text = "；".join(suggested_aliases) if suggested_aliases else "-"
+            lines.append(f"- 学生答案中的同义表达（对应 `{point}`）: {expression_text}")
+            lines.append(f"- 建议增加的 aliases（对应 `{point}`）: {suggested_text}")
+    return lines
+
+
 def revenue_not_cash_receipt_course_suggestion_lines(node: dict[str, Any], rank: int) -> list[str]:
     node_id = str(node["node_id"])
     node_label = f"`{node_id}` {node.get('node_title', '')}".strip()
@@ -532,14 +693,21 @@ def course_suggestion_lines(node: dict[str, Any], rank: int) -> list[str]:
     return lines
 
 
-def course_suggestions(ranked_nodes: list[dict[str, Any]]) -> list[str]:
+def course_suggestions(
+    ranked_nodes: list[dict[str, Any]],
+    false_fail_records: list[dict[str, Any]],
+) -> list[str]:
     lines = ["## 课程修改建议"]
-    if not ranked_nodes:
+    if not ranked_nodes and not false_fail_records:
         lines.append("")
         lines.append("暂无建议。")
         return lines
     lines.append("")
-    lines.append("以下展开高风险前三个节点，建议文本可直接转写到课程 YAML 字段。")
+    lines.append("本节区分课程内容建议和评分规则建议；存在 false fail 时，优先补强评分规则或 aliases。")
+    lines.extend(false_fail_rule_suggestion_lines(false_fail_records))
+    if ranked_nodes:
+        lines.append("")
+        lines.append("以下展开高风险前三个节点，建议文本可直接转写到课程 YAML 字段。")
 
     detailed_count = 0
     for node in ranked_nodes:
@@ -553,16 +721,22 @@ def course_suggestions(ranked_nodes: list[dict[str, Any]]) -> list[str]:
         if detailed_count >= 3:
             break
 
-    if detailed_count == 0:
+    if detailed_count == 0 and not false_fail_records:
         lines.append("")
         lines.append("当前没有触发自动课程修改建议；请结合上方冲突样本人工抽查。")
     return lines
 
 
-def report_mode_note(config: dict[str, Any]) -> str:
+def report_mode_note(config: dict[str, Any], records: list[dict[str, Any]]) -> str:
     if bool(config.get("mock_mode", True)):
-        return "mock judge 仅用于验证数据流和报告结构，不等价于真实语义评分。"
-    return "本报告使用真实 LLM judge，但仍需人工抽查关键冲突样本。"
+        return "mock judge 仅用于验证数据流；"
+    student_models = sorted({str(record.get("student_model", "")) for record in records if record.get("student_model")})
+    judge_models = sorted({str(record.get("judge_model", "")) for record in records if record.get("judge_model")})
+    return (
+        "本报告由 real-mode 生成；"
+        f"student_model: `{', '.join(student_models) or '-'}`；"
+        f"judge_model: `{', '.join(judge_models) or '-'}`。"
+    )
 
 
 def generate_report(
@@ -726,7 +900,7 @@ def generate_report(
     )
 
     lines.append("")
-    lines.extend(course_suggestions(ranked_nodes[:high_risk_top_n]))
+    lines.extend(course_suggestions(ranked_nodes[:high_risk_top_n], false_fails))
 
     lines.append("")
     lines.extend(sample_lines("需要人工复核的样本", manual_review, max_samples))
@@ -737,7 +911,7 @@ def generate_report(
             "## 备注",
             "",
             "- 本报告只读正式 `data/knowledge_graph.yaml`，不会修改正式知识图谱。",
-            f"- {report_mode_note(config)}",
+            f"- {report_mode_note(config, merged)}",
             "- `graph_fallback_used_runs` 大于 0 表示 `data/chain_definitions.yaml` 和图谱链字段均不可用，实验才使用内置 fallback。",
         ]
     )
