@@ -119,18 +119,20 @@ nodes:
       - income_statement_revenue
       - income_statement_expenses
     learning_objective: 能计算简单场景下的净利润，并理解利润不等于现金。
-    explanation: 净利润大致是收入扣除成本、费用和税费后的结果，反映一段期间的经营成果。但净利润可能包含未收现收入和非现金费用。
+    explanation: 净利润大致是收入扣除成本、费用和税费后的结果，反映一段期间的经营成果，不等于期末现金余额。净利润可能包含已经确认但尚未收现的收入，也可能包含折旧等非现金费用。
     common_misconceptions:
       - misconception: 净利润为正就一定不缺钱。
-        correction: 如果回款慢或存货占用大，企业仍可能现金紧张。
+        correction: 如果回款慢、存货占用大或需要先付款，企业仍可能现金紧张。
       - misconception: 收入高的企业利润一定高。
         correction: 成本和费用也会影响利润。
+      - misconception: 净利润增加就等于现金同额增加。
+        correction: 净利润受未收现收入和非现金费用影响，和现金余额变化可能不同。
     exercises:
       - prompt: 收入 200，费用 150，不考虑税费，净利润是多少？
         answer: 50。
     mastery_questions:
       - question: 净利润和经营现金流可以不同吗？
-        answer: 可以。
+        answer: 可以，净利润可能包含未收现收入和非现金费用，不等于现金余额。
 
   - id: cash_flow_overview
     title: 现金流量表概览
@@ -197,8 +199,10 @@ nodes:
       - income_statement_expenses
       - cash_flow_overview
     learning_objective: 理解收入费用确认与现金收付之间可能存在时间差。
-    explanation: 权责发生制关注收入和费用属于哪个会计期间，现金制关注现金是否实际收付。现代财务报表通常以权责发生制为基础。
+    explanation: 权责发生制关注交易应归属于哪个会计期间，现金制关注现金是否已经实际收付。现代财务报表通常以权责发生制为基础：本期交付但尚未收款也可能确认收入，本期已经发生但尚未付款的支出也可能归入本期费用。
     common_misconceptions:
+      - misconception: 权责发生制看现金收付，现金制看交易归属期间。
+        correction: 正好相反：权责发生制看交易归属期间，现金制看现金实际收付。
       - misconception: 没收到现金就不能确认收入。
         correction: 在满足收入确认条件时，即使未收现金也可能确认收入。
       - misconception: 没付款就没有费用。
@@ -257,18 +261,20 @@ nodes:
       - income_statement_revenue
       - income_statement_expenses
     learning_objective: 能计算毛利率，并用它初步判断产品或业务的盈利空间。
-    explanation: 毛利率等于毛利除以收入，毛利通常等于收入减销售成本。毛利率反映扣除直接成本后的盈利空间。
+    explanation: 毛利等于收入减销售成本，毛利率等于毛利除以收入。毛利率反映扣除直接销售成本后的盈利空间，但毛利还没有扣除销售、管理、研发、财务费用和税费，因此毛利高不等于净利润高，也不等于现金充足。
     common_misconceptions:
       - misconception: 毛利率就是净利率。
         correction: 毛利率没有扣除销售、管理、研发、财务费用和税费等。
       - misconception: 毛利率高就一定最终赚钱。
         correction: 期间费用过高也可能导致净利润较低或亏损。
+      - misconception: 毛利高就说明现金很多。
+        correction: 毛利是利润表口径，可能还没扣期间费用，也不反映客户是否已经付款。
     exercises:
       - prompt: 收入 100，销售成本 70，毛利率是多少？
         answer: 30%。
     mastery_questions:
       - question: 毛利率的分母通常是什么？
-        answer: 收入。
+        answer: 收入；毛利率 = 毛利 / 收入。
 
   - id: current_ratio
     title: 流动比率

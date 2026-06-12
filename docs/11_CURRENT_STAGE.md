@@ -4,7 +4,7 @@
 
 ## 1. 当前阶段
 
-当前阶段：**Synthetic Student Lab repaired baseline + enhanced scorer v2 已验收通过，准备进入课程三点小修补阶段。**
+当前阶段：**Synthetic Student Lab repaired baseline + enhanced scorer v2 已验收通过，课程三点小修补已完成，等待人工审核 diff；尚未运行 after_patch。**
 
 产品主线仍是 SkillTree Finance / AI 学习树的财务报表学习 MVP。Synthetic Student Lab 的定位仍然是离线课程质检工具，不进入正式学习主流程，不替代真实学生实验。
 
@@ -13,8 +13,9 @@
 ```text
 Enhanced scorer v2：PASS
 SSL repaired baseline：VALID
-下一步：只对 3 个课程节点做小范围、可解释修改
-后续：运行 after_patch 对比实验，验证修改是否改善课程质量
+课程三点小修补：DONE
+下一步：人工审核 data/knowledge_graph.yaml diff
+后续：经人工批准后再运行 after_patch 对比实验，验证修改是否改善课程质量
 ```
 
 ## 2. 已完成事项
@@ -114,7 +115,7 @@ v2 已修复两个关键问题：
 
 当前目标从“跑完整 B 链真实实验”转为：
 
-> 基于 repaired baseline + enhanced scorer v2，只对 3 个课程节点做小范围 patch，然后运行 after_patch 对比实验，判断 Synthetic Student Lab 是否能指导课程改进。
+> 基于 repaired baseline + enhanced scorer v2，只对 3 个课程节点做小范围 patch，先等待人工审核 diff；审核通过后再运行 after_patch 对比实验，判断 Synthetic Student Lab 是否能指导课程改进。
 
 当前不再继续大修 scorer，除非 after_patch 暴露新的明显评分漏洞。
 
@@ -293,3 +294,34 @@ enhanced_rule_score_report.md: conclusion_status = PASS
 ```
 
 结论：可以进入课程三点小修补阶段。
+
+### 记录 004
+
+状态：课程三点小修补已完成，等待人工审核。
+
+修改范围：
+
+```text
+data/knowledge_graph.yaml
+- accrual_vs_cash
+- net_profit
+- gross_margin
+```
+
+本次只对上述 3 个节点的解释、常见误区和掌握题答案做小范围、可解释增强；未修改其他课程节点，未修改 persona、judge prompt、transfer_cases、Synthetic Student Lab 工具代码、`app.py`、`pages/` 或主产品流程。
+
+已运行检查：
+
+```bash
+python -m compileall -q app.py pages src tests experiments
+python -m pytest experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py -q
+```
+
+检查结果：
+
+```text
+compileall: PASS
+pytest enhanced scorer: 5 passed, 1 dependency deprecation warning
+```
+
+当前结论：需要人工审核 `git diff data/knowledge_graph.yaml`。尚未运行 after_patch，也未进入 `experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch/`。
