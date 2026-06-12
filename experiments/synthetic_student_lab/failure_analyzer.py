@@ -59,6 +59,8 @@ def build_node_stats(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
                 "missing_points": Counter(),
                 "hidden_failed_records": [],
                 "hidden_failing_personas": Counter(),
+                "no_course_baseline_fail": 0,
+                "no_course_baseline_failing_personas": Counter(),
             },
         )
         node["total"] += 1
@@ -76,6 +78,9 @@ def build_node_stats(records: list[dict[str, Any]]) -> dict[str, dict[str, Any]]
             node["false_pass"] += 1
         if record.get("failure_type") == "rule_fail_llm_pass":
             node["false_fail"] += 1
+        if record.get("condition") == "no_course_baseline" and not bool_pass(record, "judge_passed"):
+            node["no_course_baseline_fail"] += 1
+            node["no_course_baseline_failing_personas"].update([str(record.get("student_persona", ""))])
         if isinstance(record.get("rule_score"), (int, float)):
             node["rule_scores"].append(float(record["rule_score"]))
         if isinstance(record.get("judge_score"), (int, float)):
@@ -91,11 +96,13 @@ def risk_score(node: dict[str, Any]) -> float:
     judge_failure_rate = node["judge_fail"] / total
     hidden_failure_rate = node["hidden_judge_fail"] / hidden_total
     false_pass_rate = node["false_pass"] / total
+    false_fail_rate = node["false_fail"] / total
     tag_pressure = min(1.0, sum(node["tags"].values()) / total)
     return (
         judge_failure_rate * 0.45
         + hidden_failure_rate * 0.3
-        + false_pass_rate * 0.2
+        + false_pass_rate * 0.15
+        + false_fail_rate * 0.05
         + tag_pressure * 0.05
     )
 
@@ -389,6 +396,18 @@ def hidden_failing_personas_text(node: dict[str, Any]) -> str:
     return ", ".join(personas) or "-"
 
 
+def no_course_baseline_fail_text(node: dict[str, Any]) -> str:
+    count = int(node.get("no_course_baseline_fail", 0))
+    personas = sorted(
+        persona
+        for persona, fail_count in node.get("no_course_baseline_failing_personas", {}).items()
+        if fail_count > 0
+    )
+    if count <= 0:
+        return "0"
+    return f"{count} ({', '.join(personas) or '-'})"
+
+
 def record_missing_points(record: dict[str, Any]) -> list[str]:
     points = record.get("judge_missing_reasoning_points") or record.get("missing_reasoning_points", [])
     return [str(point) for point in points]
@@ -417,8 +436,76 @@ def typical_answer_snippets_text(node: dict[str, Any]) -> str:
     return "；".join(snippets) or "-"
 
 
+def revenue_not_cash_receipt_course_suggestion_lines(node: dict[str, Any], rank: int) -> list[str]:
+    node_id = str(node["node_id"])
+    node_label = f"`{node_id}` {node.get('node_title', '')}".strip()
+    lines = ["", f"### {rank}. {node_label}"]
+    lines.append(
+        "- 问题证据: "
+        f"hidden_transfer 通过率 {hidden_pass_rate_text(node)}；"
+        f"失败 persona: {hidden_failing_personas_text(node)}；"
+        f"top_tags: {counter_summary(node['tags'], 3)}；"
+        f"false_fail_count: {node['false_fail']}；"
+        f"no_course_baseline_fail: {no_course_baseline_fail_text(node)}；"
+        f"典型 missing_reasoning_points: {typical_missing_points_text(node)}；"
+        f"典型学生回答片段: {typical_answer_snippets_text(node)}"
+    )
+
+    tags = set(str(tag) for tag in node["tags"])
+    missing_points = node["missing_points"]
+    suggestion_count = 0
+
+    if "revenue_cash_confusion" in tags:
+        lines.append(
+            "- 课程强化: 强化“收入确认”和“现金收款”的对照，并加入典型误解提醒："
+            "“没收到钱不代表不能确认收入；收入增加也不代表现金同步增加。”"
+        )
+        suggestion_count += 1
+
+    if "rote_repetition" in tags:
+        lines.append(
+            "- 新增 guiding_question: 商品已经卖出、客户尚未付款、利润表收入、现金变化分别对应什么？"
+        )
+        suggestion_count += 1
+
+    if int(node["false_fail"]) > 0:
+        lines.append(
+            "- 评分规则建议: 补充 rule aliases："
+            "“现金要等到客户付款时才增加”、"
+            "“现金不变”、"
+            "“现金还没进来”、"
+            "“收入确认不一定等于收到现金”、"
+            "“客户后续付款”、"
+            "“赊销导致现金流入延后”。"
+        )
+        suggestion_count += 1
+
+    if missing_points.get("可能形成应收账款而不是现金流入", 0) > 0:
+        lines.append(
+            "- 课程材料补充: 显式加入“赊销形成应收账款，不是当期现金流入。”"
+        )
+        suggestion_count += 1
+
+    if int(node.get("no_course_baseline_fail", 0)) > 0:
+        lines.append(
+            "- baseline 解读: no_course_baseline 下封闭学生答不出是预期行为，"
+            "用于验证学生不会在没有材料时外推；不应直接视为课程失败。"
+        )
+        suggestion_count += 1
+
+    if suggestion_count == 0:
+        lines.append(
+            "- 通用建议: 用“利润表收入 / 现金变化 / 应收账款”三列表格呈现赊销，"
+            "要求学生逐格说明商品交付、客户未付款和后续收款分别影响什么。"
+        )
+    return lines
+
+
 def course_suggestion_lines(node: dict[str, Any], rank: int) -> list[str]:
     node_id = str(node["node_id"])
+    if node_id == "revenue_not_cash_receipt":
+        return revenue_not_cash_receipt_course_suggestion_lines(node, rank)
+
     diagnostic = NODE_COURSE_DIAGNOSTICS.get(node_id)
     if diagnostic is None:
         return []
@@ -466,10 +553,16 @@ def course_suggestions(ranked_nodes: list[dict[str, Any]]) -> list[str]:
         if detailed_count >= 3:
             break
 
-    if detailed_count < 3:
+    if detailed_count == 0:
         lines.append("")
-        lines.append("高风险前三个节点中有节点缺少预设诊断模板，请先补充该节点的失败样本归因再改课程。")
+        lines.append("当前没有触发自动课程修改建议；请结合上方冲突样本人工抽查。")
     return lines
+
+
+def report_mode_note(config: dict[str, Any]) -> str:
+    if bool(config.get("mock_mode", True)):
+        return "mock judge 仅用于验证数据流和报告结构，不等价于真实语义评分。"
+    return "本报告使用真实 LLM judge，但仍需人工抽查关键冲突样本。"
 
 
 def generate_report(
@@ -644,7 +737,7 @@ def generate_report(
             "## 备注",
             "",
             "- 本报告只读正式 `data/knowledge_graph.yaml`，不会修改正式知识图谱。",
-            "- 当前 mock judge 用于验证数据流和报告结构，不等价于真实语义评分。",
+            f"- {report_mode_note(config)}",
             "- `graph_fallback_used_runs` 大于 0 表示 `data/chain_definitions.yaml` 和图谱链字段均不可用，实验才使用内置 fallback。",
         ]
     )
