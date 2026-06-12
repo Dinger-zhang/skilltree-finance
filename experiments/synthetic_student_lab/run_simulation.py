@@ -159,6 +159,8 @@ def llm_student_response(
             "used_node_ids": ["node_id"],
             "external_knowledge_suspicion": False,
             "misconception_tags": ["string"],
+            "evidence_status": "string",
+            "persona_behavior_trace": "string",
         },
     }
     completion = client.chat_completion(
@@ -178,6 +180,8 @@ def llm_student_response(
         "used_node_ids": parsed.get("used_node_ids", []),
         "external_knowledge_suspicion": bool(parsed.get("external_knowledge_suspicion", False)),
         "misconception_tags": parsed.get("misconception_tags", []),
+        "evidence_status": str(parsed.get("evidence_status", "")),
+        "persona_behavior_trace": str(parsed.get("persona_behavior_trace", "")),
         "student_raw_response": raw,
         "student_parse_error": "",
         "student_request_id": completion.get("request_id", ""),
@@ -293,6 +297,8 @@ def run_simulation(
                             "used_node_ids": [],
                             "external_knowledge_suspicion": False,
                             "misconception_tags": [],
+                            "evidence_status": "",
+                            "persona_behavior_trace": "",
                         }
                         student_raw_response = exc.raw_response
                         student_parse_error = exc.parse_error
@@ -304,6 +310,8 @@ def run_simulation(
                             "used_node_ids": [],
                             "external_knowledge_suspicion": False,
                             "misconception_tags": [],
+                            "evidence_status": "",
+                            "persona_behavior_trace": "",
                         }
                         error_message = f"student_llm_error: {exc}"
                 else:
@@ -338,6 +346,8 @@ def run_simulation(
                         "expected_reasoning_points": expected_points,
                         "misconception_traps": traps,
                         "misconception_tags": response.get("misconception_tags", []),
+                        "evidence_status": str(response.get("evidence_status", "")),
+                        "persona_behavior_trace": str(response.get("persona_behavior_trace", "")),
                         "external_knowledge_suspicion": bool(
                             response.get("external_knowledge_suspicion", False)
                         ),
