@@ -897,6 +897,485 @@ def evaluate_rule(
     }
 
 
+ENHANCED_SYNONYM_REPLACEMENTS = (
+    ("收到现金", "现金收款"),
+    ("现金到账", "现金收款"),
+    ("现金流入", "现金收款"),
+    ("收到钱", "现金收款"),
+    ("收款", "现金收款"),
+    ("客户付款", "现金收款"),
+    ("确认收入", "收入确认"),
+    ("记录收入", "收入确认"),
+    ("计入收入", "收入确认"),
+    ("利润表确认收入", "收入确认"),
+    ("确认费用", "费用确认"),
+    ("计入费用", "费用确认"),
+    ("费用发生", "费用确认"),
+    ("发生费用", "费用确认"),
+    ("计提折旧", "折旧"),
+    ("摊销", "折旧"),
+    ("长期资产成本分摊", "折旧成本分摊"),
+    ("资产成本分摊", "折旧成本分摊"),
+    ("利润", "净利润"),
+    ("经营成果", "净利润"),
+    ("收入扣除成本费用", "净利润"),
+    ("收入减成本费用", "净利润"),
+)
+
+CONTRADICTION_PATTERNS: dict[str, list[str]] = {
+    "revenue_implies_cash": [
+        "收入增加就一定现金增加",
+        "收入增加说明现金也增加",
+        "收入增加意味着现金也增加",
+        "收入增加应该意味着现金也增加",
+        "收入增加就代表现金增加",
+        "收入就是现金流入",
+        "收入就是收款",
+    ],
+    "cash_required_for_revenue": [
+        "没收到钱所以不算收入",
+        "没收到现金所以不算收入",
+        "没收到钱就不算收入",
+        "没收到现金就不算收入",
+        "没收到钱就不能确认收入",
+        "没收到现金就不能确认收入",
+        "没收到钱怎么能算收入",
+        "没收到现金怎么能算收入",
+        "没有收到钱不能确认收入",
+        "没有收到现金不能确认收入",
+        "收入确认看的是有没有收到钱",
+        "收入确认必须等到实际收款",
+        "必须等到实际收款",
+    ],
+    "payment_required_for_expense": [
+        "没付款就没有费用",
+        "没有付款就没有费用",
+        "没付钱就没有费用",
+        "费用就是付款",
+    ],
+    "profit_implies_cash": [
+        "净利润为正就一定现金充足",
+        "净利润为正就说明现金充足",
+        "净利润为正就不缺钱",
+        "净利润为正现金应该也不错",
+        "净利润为正现金应该不错",
+        "净利润为正现金应该增加",
+        "净利润为正现金会增加",
+        "利润为正就一定现金充足",
+        "利润为正现金应该增加",
+        "利润增加现金也增加",
+        "赚钱就是现金增加",
+    ],
+    "depreciation_implies_cash_outflow": [
+        "折旧减少利润就一定代表当期现金流出",
+        "折旧就是每月付款",
+        "折旧就是现金流出",
+        "折旧代表当期付款",
+    ],
+    "accrual_cash_basis_confusion": [
+        "权责发生制主要看现金是否实际收付",
+        "权责发生制看现金是否实际收付",
+        "权责发生制关注现金实际收付",
+        "现金制关注交易归属期间",
+    ],
+    "gross_margin_implies_net_profit": [
+        "毛利高净利润一定高",
+        "毛利高净利润肯定也高",
+        "毛利率高就是净利率",
+        "毛利率就是净利率",
+        "毛利高就一定最终赚钱",
+    ],
+}
+
+
+def enhanced_normalize_text(text: str) -> str:
+    normalized = re.sub(r"[\s,，。；;：:、/\\.\?!！？（）()\[\]【】\"'“”‘’\-]+", "", str(text).lower())
+    for source, target in ENHANCED_SYNONYM_REPLACEMENTS:
+        normalized = normalized.replace(source.lower(), target.lower())
+    return normalized
+
+
+def evidence_normalize_text(text: str) -> str:
+    return re.sub(r"[\s,，。；;：:、/\\.\?!！？（）()\[\]【】\"'“”‘’\-]+", "", str(text).lower())
+
+
+def enhanced_text_contains(answer: str, variant: str) -> bool:
+    normalized_answer = enhanced_normalize_text(answer)
+    normalized_variant = enhanced_normalize_text(variant)
+    if normalized_variant and normalized_variant in normalized_answer:
+        return True
+    tokens = [enhanced_normalize_text(token) for token in point_tokens(variant)]
+    tokens = [token for token in tokens if len(token) >= 2]
+    if not tokens:
+        return False
+    required = 1 if len(tokens) <= 2 else 2
+    return sum(1 for token in tokens if token in normalized_answer) >= required
+
+
+def has_any(normalized_text: str, terms: list[str]) -> bool:
+    return any(enhanced_normalize_text(term) in normalized_text for term in terms)
+
+
+def evidence_has_any(normalized_text: str, terms: list[str]) -> bool:
+    return any(evidence_normalize_text(term) in normalized_text for term in terms)
+
+
+NET_PROFIT_REASONING_POINTS = {
+    "净利润大致等于收入扣除成本费用和税费": "profit_formula_or_deduction_path",
+    "净利润可能包含未收现收入": "uncollected_revenue_reason",
+    "净利润可能包含非现金费用所以不等于现金": "non_cash_expense_reason",
+}
+
+EXPENSE_RECOGNITION_REASONING_POINTS = {
+    "费用是为取得收入或维持经营发生的耗费": "expense_consumption_reason",
+    "费用发生不一定等于当期已经付款": "expense_not_payment_reason",
+    "工资费用会减少本期利润": "expense_period_profit_reason",
+}
+
+
+def net_profit_evidence(answer: str) -> dict[str, bool]:
+    answer_n = evidence_normalize_text(answer)
+    formula = evidence_has_any(
+        answer_n,
+        [
+            "收入扣除成本和费用",
+            "收入扣除成本费用",
+            "收入扣除成本费用和税费",
+            "收入减成本费用",
+            "收入减去成本和费用",
+            "收入减去成本费用和税费",
+            "扣除成本费用和税费后的结果",
+            "收入-成本-费用",
+            "收入扣除成本",
+        ],
+    ) and evidence_has_any(answer_n, ["净利润", "利润"])
+    uncollected_revenue = evidence_has_any(
+        answer_n,
+        [
+            "未收现收入",
+            "收入可能已经确认但还没收到现金",
+            "收入已经确认但还没收到现金",
+            "确认收入但未收现金",
+            "确认收入但还没收到现金",
+            "确认收入但没有收到现金",
+            "收入确认但客户尚未付款",
+            "应收账款",
+            "赊销",
+            "客户还没有付款",
+            "客户尚未付款",
+        ],
+    )
+    non_cash_expense = evidence_has_any(
+        answer_n,
+        [
+            "非现金费用",
+            "折旧等非现金费用",
+            "折旧",
+            "摊销",
+            "不代表现金流出",
+            "不是当期现金流出",
+            "没有现金流出",
+        ],
+    ) and evidence_has_any(answer_n, ["影响利润", "减少利润", "费用", "净利润", "利润"])
+    conclusion = evidence_has_any(
+        answer_n,
+        [
+            "净利润不等于现金",
+            "利润不等于现金",
+            "净利润为正不一定现金充足",
+            "不一定代表现金充足",
+            "不一定现金充足",
+            "不代表现金充足",
+        ],
+    )
+    return {
+        "profit_formula_or_deduction_path": formula,
+        "uncollected_revenue_reason": uncollected_revenue,
+        "non_cash_expense_reason": non_cash_expense,
+        "cash_not_equal_profit_conclusion": conclusion,
+    }
+
+
+def expense_recognition_evidence(answer: str) -> dict[str, bool]:
+    answer_n = evidence_normalize_text(answer)
+    consumption = evidence_has_any(
+        answer_n,
+        [
+            "资源耗费",
+            "经营耗费",
+            "为经营发生",
+            "为取得收入发生",
+            "为取得收入或维持经营发生",
+            "服务于本期经营",
+            "服务于本月经营",
+            "员工本月完成工作",
+            "员工已经完成本月工作",
+            "员工已经完成了工作",
+            "耗费服务于本期",
+            "耗费服务于本月",
+            "维持经营发生",
+        ],
+    )
+    not_payment = evidence_has_any(
+        answer_n,
+        [
+            "不看现金支付时间",
+            "不是现金支付时间",
+            "不等于当期现金付款",
+            "不一定等于当期现金付款",
+            "工资下月才发",
+            "工资虽下月发放",
+            "工资下月发放",
+            "下月才发",
+            "下月发放",
+            "费用确认不取决于是否已经付款",
+            "不取决于是否已经付款",
+            "不必等到付款",
+            "未付款也可能确认费用",
+        ],
+    )
+    period_profit = evidence_has_any(
+        answer_n,
+        [
+            "作为本月费用",
+            "作为本期费用",
+            "计入本期费用",
+            "计入本月费用",
+            "影响本期利润",
+            "减少本期利润",
+            "归入本期经营",
+            "本月费用",
+            "本期费用",
+            "工资费用会减少本期利润",
+        ],
+    )
+    return {
+        "expense_consumption_reason": consumption,
+        "expense_not_payment_reason": not_payment,
+        "expense_period_profit_reason": period_profit,
+    }
+
+
+def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
+    answer_n = enhanced_normalize_text(answer)
+    point_n = enhanced_normalize_text(point_text)
+    reasons = []
+    net_profit_evidence_map = net_profit_evidence(answer)
+    expense_evidence_map = expense_recognition_evidence(answer)
+
+    if has_any(point_n, ["利润表", "经营成果"]) and has_any(
+        answer_n,
+        ["利润表记录经营成果", "利润表记录的是经营成果", "重点看收入成本费用", "一段期间的经营成果"],
+    ):
+        reasons.append("semantic:profit_statement_operating_result")
+
+    if has_any(point_n, ["销售商品", "提供服务", "收入"]) and has_any(
+        answer_n,
+        ["销售商品", "提供服务", "商品已经卖出", "已经交付", "卖咖啡", "出售咖啡", "完成服务", "收入确认"],
+    ):
+        reasons.append("semantic:sales_or_service_revenue")
+
+    if has_any(point_n, ["借款", "筹资", "融资", "营业收入"]) and has_any(
+        answer_n,
+        ["借款", "贷款", "资金来源", "筹资", "融资"],
+    ) and has_any(answer_n, ["不是营业收入", "不是经营收入", "不应作为营业收入", "不是收入"]):
+        reasons.append("semantic:borrowing_not_operating_revenue")
+
+    if has_any(point_n, ["收入确认", "未收现金", "现金不一定", "现金收款"]) and has_any(
+        answer_n,
+        ["收入确认", "可以确认收入", "确认收入"],
+    ) and has_any(answer_n, ["还没现金收款", "没有现金收款", "未现金收款", "现金没有增加", "现金不变", "客户尚未付款"]):
+        reasons.append("semantic:revenue_recognition_not_cash")
+
+    if has_any(point_n, ["应收账款", "不是现金流入"]) and has_any(
+        answer_n,
+        ["应收账款", "应收", "客户后续付款", "以后付款", "未来收款权利", "现金流入延后"],
+    ):
+        reasons.append("semantic:receivable_not_cash")
+
+    expense_reason = EXPENSE_RECOGNITION_REASONING_POINTS.get(point_text)
+    if expense_reason == "expense_consumption_reason" and expense_evidence_map[expense_reason]:
+        reasons.append("semantic:expense_consumption_reason")
+    if expense_reason == "expense_not_payment_reason" and expense_evidence_map[expense_reason]:
+        reasons.append("semantic:expense_not_payment_reason")
+    if expense_reason == "expense_period_profit_reason" and expense_evidence_map[expense_reason]:
+        reasons.append("semantic:expense_period_profit_reason")
+
+    if has_any(point_n, ["折旧", "长期资产", "成本分摊", "现金"]) and has_any(
+        answer_n,
+        ["折旧", "折旧成本分摊", "长期资产", "多个期间", "受益期间"],
+    ):
+        reasons.append("semantic:depreciation_allocation")
+
+    if has_any(point_n, ["折旧", "减少当期利润", "现金流出"]) and has_any(
+        answer_n,
+        ["折旧", "减少利润", "影响利润", "不是现金流出", "不是再次付款", "非现金"],
+    ):
+        reasons.append("semantic:depreciation_profit_not_cash")
+
+    net_profit_reason = NET_PROFIT_REASONING_POINTS.get(point_text)
+    if net_profit_reason == "profit_formula_or_deduction_path" and net_profit_evidence_map[net_profit_reason]:
+        reasons.append("semantic:net_profit_formula_or_deduction_path")
+    if net_profit_reason == "uncollected_revenue_reason" and net_profit_evidence_map[net_profit_reason]:
+        reasons.append("semantic:net_profit_uncollected_revenue_reason")
+    if net_profit_reason == "non_cash_expense_reason" and net_profit_evidence_map[net_profit_reason]:
+        reasons.append("semantic:net_profit_non_cash_expense_reason")
+
+    if has_any(point_n, ["权责发生制", "交易归属期间"]) and has_any(
+        answer_n,
+        [
+            "权责发生制关注交易归属期间",
+            "权责发生制看交易归属期间",
+            "权责发生制按交易归属期间",
+            "权责发生制关注收入费用归属",
+            "权责发生制关注属于哪个期间",
+            "收入和费用属于哪个期间",
+        ],
+    ):
+        reasons.append("semantic:accrual_period")
+
+    if has_any(point_n, ["现金制", "实际收付"]) and has_any(
+        answer_n,
+        [
+            "现金制关注现金实际收付",
+            "现金制看现金实际收付",
+            "现金制按现金实际收付",
+            "现金制关注实际收付时间",
+            "现金制关注现金实际收付时间",
+        ],
+    ):
+        reasons.append("semantic:cash_basis_receipts_payments")
+
+    if has_any(point_n, ["毛利", "销售成本"]) and has_any(answer_n, ["毛利", "收入减销售成本", "1000065003500", "3500"]):
+        reasons.append("semantic:gross_margin_amount")
+
+    if has_any(point_n, ["毛利率"]) and has_any(answer_n, ["毛利率", "350010000", "35"]):
+        reasons.append("semantic:gross_margin_rate")
+
+    if has_any(point_n, ["期间费用", "销售管理研发财务"]) and has_any(
+        answer_n,
+        ["期间费用", "销售费用", "管理费用", "财务费用", "还不是净利润", "尚未扣除"],
+    ):
+        reasons.append("semantic:period_expenses")
+
+    return reasons
+
+
+def enhanced_reasoning_point_match_detail(answer: str, point: Any) -> dict[str, Any]:
+    config = normalize_reasoning_point(point)
+    base_detail = reasoning_point_match_detail(answer, config)
+    matched_by = list(base_detail["matched_by"])
+    for variant in reasoning_point_variants(config):
+        if enhanced_text_contains(answer, variant["value"]):
+            matched_by.append({"source": f"normalized_{variant['source']}", "value": variant["value"]})
+    for reason in enhanced_semantic_match_reasons(answer, config["text"]):
+        matched_by.append({"source": reason, "value": config["text"]})
+
+    unique = []
+    seen = set()
+    for match in matched_by:
+        key = (str(match.get("source", "")), str(match.get("value", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(match)
+
+    return {
+        "point": config["text"],
+        "required": config["required"],
+        "matched": bool(unique),
+        "matched_by": unique,
+    }
+
+
+def detect_contradictions(answer: str) -> tuple[bool, list[str]]:
+    normalized = enhanced_normalize_text(answer)
+    tags = []
+    for tag, patterns in CONTRADICTION_PATTERNS.items():
+        if any(enhanced_normalize_text(pattern) in normalized for pattern in patterns):
+            tags.append(tag)
+    return bool(tags), sorted(set(tags))
+
+
+def enhanced_rule_scorer(
+    answer: str,
+    expected_points: list[Any],
+    pass_ratio: float,
+) -> dict[str, Any]:
+    expected = normalize_expected_reasoning_points(expected_points)
+    point_details = [enhanced_reasoning_point_match_detail(answer, point) for point in expected]
+    matched = [detail["point"] for detail in point_details if detail["matched"]]
+    missing = [detail["point"] for detail in point_details if not detail["matched"]]
+    base_score = len(matched) / len(expected) if expected else 0.0
+    configured_pass_ratio = float(pass_ratio)
+    effective_pass_ratio = configured_pass_ratio if configured_pass_ratio > 0.67 else RULE_PASS_RATIO_FLOOR
+    required_count = (
+        max(1, math.ceil((len(expected) * effective_pass_ratio) - 1e-9))
+        if expected
+        else 1
+    )
+    contradiction_detected, contradiction_tags = detect_contradictions(answer)
+    completeness_blocker = has_completeness_blocker(answer)
+    score = base_score
+    scoring_notes = [
+        "base exact/alias matching preserved",
+        "normalized synonym and semantic matching applied",
+    ]
+    minimum_evidence: dict[str, Any] = {}
+    expected_texts = {point["text"] for point in expected}
+    if set(NET_PROFIT_REASONING_POINTS).issubset(expected_texts):
+        evidence = net_profit_evidence(answer)
+        mechanism_count = sum(
+            1
+            for key in (
+                "profit_formula_or_deduction_path",
+                "uncollected_revenue_reason",
+                "non_cash_expense_reason",
+            )
+            if evidence[key]
+        )
+        minimum_evidence["net_profit"] = {
+            **evidence,
+            "mechanism_evidence_count": mechanism_count,
+        }
+        if evidence["cash_not_equal_profit_conclusion"] and mechanism_count == 0:
+            score = min(score, 0.4)
+            scoring_notes.append("net_profit conclusion-only answer capped at 0.4")
+    if set(EXPENSE_RECOGNITION_REASONING_POINTS).issubset(expected_texts):
+        evidence = expense_recognition_evidence(answer)
+        minimum_evidence["expense_recognition"] = evidence
+    if contradiction_detected and matched:
+        score = min(0.5, max(0.0, score - 0.34))
+        scoring_notes.append(
+            "contradiction penalty and 0.5 score cap applied because answer contains a matched point and an opposing misconception"
+        )
+    if completeness_blocker:
+        score = min(score, 0.4)
+        scoring_notes.append("completeness blocker penalty applied")
+
+    passed = len(matched) >= required_count and score >= effective_pass_ratio and not completeness_blocker
+    return {
+        "enhanced_rule_score": round(score, 4),
+        "enhanced_rule_passed": passed,
+        "enhanced_matched_reasoning_points": matched,
+        "enhanced_missing_reasoning_points": missing,
+        "contradiction_detected": contradiction_detected,
+        "contradiction_tags": contradiction_tags,
+        "scoring_notes": scoring_notes,
+        "enhanced_rule_score_detail": {
+            "scoring_method": "old exact/keyword + normalized semantic matching - contradiction penalty",
+            "base_score_before_penalty": round(base_score, 4),
+            "effective_pass_ratio": round(effective_pass_ratio, 4),
+            "expected_count": len(expected),
+            "matched_count": len(matched),
+            "missing_count": len(missing),
+            "required_count": required_count,
+            "minimum_evidence": minimum_evidence,
+            "points": point_details,
+        },
+    }
+
+
 MISCONCEPTION_PATTERNS: dict[str, list[str]] = {
     "revenue_cash_confusion": [
         "收到现金才算收入",
