@@ -230,13 +230,58 @@ false fail 风险：
 若进入 v3.1，应采用概念级、窄范围补强，并配套反向误解负例测试。
 ```
 
+## 人工审核后的执行结果
+
+人工审核结论：
+
+```text
+批准进入窄范围 scorer v3.1。
+仅处理 3 条高置信 scorer_too_strict 样本。
+不放松 gross_margin、net_profit、depreciation_amortization、income_statement_boundary 的保守边界。
+不修改课程，不运行真实 API。
+```
+
+v3.1 已完成的修正：
+
+```text
+1. revenue_recognition:
+   覆盖“服务完成/商品交付 + 未收款/下月收款 + 可确认收入”的有效改写。
+
+2. revenue_not_cash_receipt:
+   覆盖“收入记录赚到的经营成果 + 收款记录现金进入 + 赊销造成时间差”的有效改写。
+
+3. contradiction guard:
+   补充“没收钱就不应算收入”“收入增加就应现金增加”等反向误解识别。
+
+4. accrual_vs_cash:
+   修复 v3.1 初稿造成的一条回归，确保明确的权责发生制收入/费用归属答案仍可通过。
+```
+
+v3.1 本地 rescore 结果：
+
+```text
+enhanced_rule_passed: 29/96 -> 32/96
+enhanced false pass: 0 -> 0
+enhanced false fail: 18 -> 15
+enhanced_rule_score_avg: 0.3906 -> 0.3984
+sanity_tests_passed: True
+```
+
+对应报告：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/scorer_v3_1_false_fail_patch_report.md
+```
+
 ## 结论
 
 ```text
 false_fail_review: COMPLETE
+human_review_gate: APPROVED_NARROW_V3_1
+scorer_v3_1_false_fail_patch: COMPLETE
 recommended_status: PARTIAL_PASS
 course_validation_status: FAIL
-next_gate: human review before scorer v3.1 implementation
+next_gate: human review of v3.1 diff before any new real API experiment
 ```
 
-本审核只支持一个小范围 v3.1 计划：针对 `revenue_recognition` 和 `revenue_not_cash_receipt` 的高置信有效改写补充覆盖。当前不支持广泛放松 scorer，不支持课程修改，也不支持立刻重新运行真实 API。
+本审核已支持并完成一个小范围 v3.1 计划：针对 `revenue_recognition` 和 `revenue_not_cash_receipt` 的高置信有效改写补充覆盖，同时保留反向误解失败保护。当前仍不支持广泛放松 scorer，不支持课程修改，也不支持立刻重新运行真实 API。

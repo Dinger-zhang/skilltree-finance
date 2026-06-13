@@ -555,3 +555,90 @@ recommended_status: PARTIAL_PASS
 course_validation_status: FAIL
 next_gate: human review before scorer v3.1 implementation
 ```
+
+### 记录 008
+
+状态：false fail 人工审核已完成，enhanced scorer v3.1 小修已完成，等待人工审核 diff。
+
+人工审核决定：
+
+```text
+批准只处理 3 条高置信 scorer_too_strict 样本：
+  4e12cea729ecaa0a / revenue_recognition
+  585ba193316e1153 / revenue_not_cash_receipt
+  4ab92215771f559d / revenue_not_cash_receipt
+
+继续保持以下边界不放松：
+  gross_margin 公式与净利边界
+  net_profit 与现金充足边界
+  depreciation_amortization 非现金费用边界
+  income_statement_boundary 借款非收入边界
+```
+
+修改范围：
+
+```text
+experiments/synthetic_student_lab/common.py
+experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/enhanced_false_fail_review.md
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/scorer_v3_1_false_fail_patch_report.md
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180/judge_results.enhanced.jsonl
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180/enhanced_rule_score_report.md
+```
+
+scorer v3.1 修改内容：
+
+```text
+1. revenue_recognition:
+   覆盖“服务完成/商品交付 + 未收款/下月收款 + 可确认收入”的有效改写。
+
+2. revenue_not_cash_receipt:
+   覆盖“收入记录赚到的经营成果 + 收款记录现金进入 + 赊销造成时间差”的有效改写。
+
+3. contradiction guard:
+   补充“没收钱就不应算收入”“现金没增加时确认收入不合理”“收入增加就应现金增加”等反向误解识别。
+
+4. accrual_vs_cash:
+   修复 v3.1 初稿引入的一条回归，保证明确说明 6 月收入/费用归属的答案仍可通过。
+```
+
+已运行命令：
+
+```bash
+python -m compileall -q app.py pages src tests experiments
+python -m pytest experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py -q
+python experiments/synthetic_student_lab/rescore_with_enhanced_rules.py --input-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+```
+
+检查结果：
+
+```text
+compileall: PASS
+pytest enhanced scorer: 15 passed, 1 dependency deprecation warning
+local rescore sanity_tests_passed: True
+```
+
+v3 到 v3.1 指标变化：
+
+```text
+enhanced_rule_passed: 29/96 -> 32/96
+enhanced false pass: 0 -> 0
+enhanced false fail: 18 -> 15
+enhanced_rule_score_avg: 0.3906 -> 0.3984
+```
+
+结论：
+
+```text
+scorer_v3_1_false_fail_patch: PASS
+false_pass_guard: PASS
+course_validation_status: still FAIL
+```
+
+说明：
+
+```text
+v3.1 是 scorer hygiene 小修，不能改写课程验证结论。
+本阶段没有修改课程，没有运行真实 API。
+当前应暂停，等待人工审核 v3.1 diff 与中文报告，再决定是否需要新的真实实验或课程二次 patch。
+```

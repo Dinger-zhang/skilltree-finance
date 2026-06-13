@@ -928,6 +928,8 @@ CONTRADICTION_PATTERNS: dict[str, list[str]] = {
         "收入增加说明现金也增加",
         "收入增加意味着现金也增加",
         "收入增加应该意味着现金也增加",
+        "收入增加应该意味着现金增加",
+        "收入增加就应该意味着现金增加",
         "收入增加就代表现金增加",
         "收入就是现金流入",
         "收入就是收款",
@@ -940,10 +942,16 @@ CONTRADICTION_PATTERNS: dict[str, list[str]] = {
         "没收到现金就不算收入",
         "没收到钱就不能确认收入",
         "没收到现金就不能确认收入",
+        "没收到钱就不应该算收入",
+        "没收到现金就不应该算收入",
+        "没收到钱不应该算收入",
+        "没收到现金不应该算收入",
         "没收到钱怎么能算收入",
         "没收到现金怎么能算收入",
         "没有收到钱不能确认收入",
         "没有收到现金不能确认收入",
+        "现金没增加时确认收入不合理",
+        "现金没有增加时确认收入不合理",
         "收入确认看的是有没有收到钱",
         "收入确认必须等到实际收款",
         "收入必须是在收到现金时才能确认",
@@ -1234,11 +1242,61 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
     ):
         reasons.append("semantic:profit_statement_operating_result")
 
-    if has_any(point_n, ["销售商品", "提供服务", "收入"]) and has_any(
+    if has_any(point_n, ["销售商品", "提供服务"]) and has_any(
         answer_n,
-        ["销售商品", "提供服务", "商品已经卖出", "已经交付", "卖咖啡", "出售咖啡", "完成服务"],
+        [
+            "销售商品",
+            "提供服务",
+            "商品已经卖出",
+            "商品交付",
+            "商品是否交付",
+            "已经交付",
+            "完成交付",
+            "完成并交付",
+            "卖咖啡",
+            "出售咖啡",
+            "完成服务",
+            "服务完成",
+            "服务已完成",
+            "服务是否完成",
+        ],
     ):
         reasons.append("semantic:sales_or_service_revenue")
+
+    completion_or_delivery = has_any(
+        answer_n,
+        [
+            "商品交付",
+            "商品是否交付",
+            "已经交付",
+            "完成交付",
+            "完成并交付",
+            "完成服务",
+            "服务完成",
+            "服务已完成",
+            "服务是否完成",
+        ],
+    )
+    revenue_may_be_recognized = has_any(
+        answer_n,
+        [
+            "可以确认收入",
+            "应确认收入",
+            "应收入确认",
+            "可能确认收入",
+            "可确认收入",
+            "仍可能确认收入",
+            "仍可确认收入",
+            "本月确认收入",
+            "本月仍可确认收入",
+        ],
+    )
+    if (
+        has_any(point_n, ["完成交付", "服务后", "收入确认条件"])
+        and completion_or_delivery
+        and revenue_may_be_recognized
+    ):
+        reasons.append("semantic:revenue_recognition_completion_or_delivery")
 
     if has_any(point_n, ["借款", "筹资", "融资", "营业收入"]) and has_any(
         answer_n,
@@ -1249,8 +1307,70 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
     if has_any(point_n, ["收入确认", "未收现金", "现金不一定", "现金收款"]) and has_any(
         answer_n,
         ["可以确认收入", "仍可能确认收入", "仍可确认收入", "本月确认收入", "先确认收入"],
-    ) and has_any(answer_n, ["还没现金收款", "没有现金收款", "未现金收款", "现金没有增加", "现金不变", "客户尚未付款"]):
+    ) and has_any(
+        answer_n,
+        [
+            "还没现金收款",
+            "没有现金收款",
+            "未现金收款",
+            "未收到现金",
+            "未收现金",
+            "未收款",
+            "没收到现金",
+            "没有收到现金",
+            "不是看是否现金收款",
+            "不看是否现金收款",
+            "不是看有没有现金收款",
+            "不是看是否收到现金",
+            "即使客户下月付款",
+            "客户下月付款",
+            "下月付款",
+            "以后付款",
+            "现金没有增加",
+            "现金不变",
+            "客户尚未付款",
+        ],
+    ):
         reasons.append("semantic:revenue_recognition_not_cash")
+
+    revenue_record_side = has_any(
+        answer_n,
+        [
+            "收入记录赚到的经营成果",
+            "收入记录的是赚到的经营成果",
+            "收入记录经营成果",
+            "收入是赚到的经营成果",
+            "收入记录已赚取的经营成果",
+        ],
+    )
+    collection_record_side = has_any(
+        answer_n,
+        [
+            "收款记录现金进入",
+            "收款记录的是现金进入",
+        ],
+    )
+    credit_timing_gap = has_any(
+        answer_n,
+        [
+            "赊销会让收入和现金流入出现时间差",
+            "赊销会让收入与现金流入出现时间差",
+            "赊销会让收入和现金进入出现时间差",
+            "赊销造成收入和现金流入时间差",
+            "赊销造成收入与现金流入时间差",
+            "收入和现金流入出现时间差",
+            "收入与现金流入出现时间差",
+            "收入和现金进入出现时间差",
+        ],
+    )
+    if (
+        has_any(point_n, ["未收现金", "现金不一定增加"])
+        and has_any(answer_n, ["赊销"])
+        and revenue_record_side
+        and collection_record_side
+        and credit_timing_gap
+    ):
+        reasons.append("semantic:revenue_cash_timing_gap")
 
     if has_any(point_n, ["应收账款", "不是现金流入"]) and has_any(
         answer_n,
@@ -1299,6 +1419,22 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
     ):
         reasons.append("semantic:accrual_period")
 
+    if (
+        has_any(point_n, ["未收款", "确认收入"])
+        and revenue_may_be_recognized
+        and completion_or_delivery
+        and has_any(answer_n, ["7月收款", "虽然7月收款", "未收款", "未收到现金", "客户下月付款", "下月付款"])
+    ):
+        reasons.append("semantic:accrual_uncollected_revenue_period")
+
+    if (
+        has_any(point_n, ["费用", "未付款", "归入"])
+        and has_any(answer_n, ["应费用确认", "费用确认", "应确认费用", "6月应确认费用", "本月费用", "本期费用"])
+        and has_any(answer_n, ["6月发生的房租", "房租是6月的耗费", "本月发生", "本期发生", "发生房租"])
+        and has_any(answer_n, ["7月付款", "虽然7月付款", "未付款", "下月付款"])
+    ):
+        reasons.append("semantic:accrual_unpaid_expense_period")
+
     if has_any(point_n, ["现金制", "实际收付"]) and has_any(
         answer_n,
         [
@@ -1307,6 +1443,8 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
             "现金制按现金实际收付",
             "现金制关注实际收付时间",
             "现金制关注现金实际收付时间",
+            "现金制下关注现金实际收付时间",
+            "现金制下则关注现金实际收付时间",
         ],
     ):
         reasons.append("semantic:cash_basis_receipts_payments")

@@ -113,6 +113,18 @@ def test_accrual_vs_cash_reversed_definition_should_fail() -> None:
     assert result["enhanced_rule_passed"] is False
 
 
+def test_accrual_vs_cash_completed_service_and_unpaid_expense_should_pass() -> None:
+    result = score(
+        "咨询公司6月完成服务虽然7月收款，但在权责发生制下，6月应确认收入，因为服务已完成；"
+        "同样，6月发生的房租虽7月付款，但6月应确认费用，因为房租是6月的耗费。"
+        "权责发生制关注交易归属期间，现金制下则关注现金实际收付时间。",
+        ACCRUAL_VS_CASH_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is True
+    assert result["enhanced_rule_score"] >= PASS_RATIO
+
+
 def test_gross_margin_boundary_only_answer_should_not_pass() -> None:
     result = score(
         "因为毛利还不是净利润。",
@@ -141,6 +153,17 @@ def test_revenue_recognition_cash_only_answer_should_not_pass() -> None:
     assert result["enhanced_rule_passed"] is False
 
 
+def test_revenue_recognition_completion_and_no_cash_paraphrase_should_pass() -> None:
+    result = score(
+        "根据材料，收入确认通常看服务是否完成或商品是否交付，而不是看是否收到现金。"
+        "本月服务已完成，所以即使客户下月付款，本月仍可确认收入。",
+        REVENUE_RECOGNITION_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is True
+    assert result["enhanced_rule_score"] >= PASS_RATIO
+
+
 def test_revenue_recognition_cash_required_contradiction_should_fail() -> None:
     result = score(
         "不能确认收入，因为还没收到现金。客户下月才付款，所以收入应该在下月收到现金时确认。",
@@ -154,6 +177,27 @@ def test_revenue_recognition_cash_required_contradiction_should_fail() -> None:
 def test_revenue_not_cash_contradiction_should_fail() -> None:
     result = score(
         "本月利润表上不应该确认收入，因为没有收到现金。收入必须是在收到现金时才能确认，所以收入等于收款。",
+        REVENUE_NOT_CASH_POINTS,
+    )
+
+    assert result["contradiction_detected"] is True
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_revenue_not_cash_timing_gap_paraphrase_should_pass() -> None:
+    result = score(
+        "根据规则，收入记录赚到的经营成果；收款记录现金进入。赊销会让收入和现金流入出现时间差。",
+        REVENUE_NOT_CASH_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is True
+    assert result["enhanced_rule_score"] >= PASS_RATIO
+
+
+def test_revenue_not_cash_timing_gap_with_cash_misconception_should_fail() -> None:
+    result = score(
+        "材料说收入记录赚到的经营成果，收款记录现金进入，赊销时收入确认不等于收到现金。"
+        "但我还是觉得收入增加就应该意味着现金增加，不然怎么叫赚到呢？",
         REVENUE_NOT_CASH_POINTS,
     )
 
