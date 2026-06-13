@@ -1,45 +1,45 @@
-# Enhanced Scorer v3 False Fail Review
+# Enhanced Scorer v3 False Fail 审核报告
 
-Date: 2026-06-13
+日期：2026-06-13
 
-Source result:
+数据来源：
 
 ```text
 experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180/judge_results.enhanced.jsonl
 ```
 
-Scope:
+审核范围：
 
 ```text
-Only rows where judge_passed=true and enhanced_rule_passed=false.
-No course content, scorer, persona, judge prompt, transfer_cases, or real API calls were changed in this review.
+仅审核 judge_passed=true 且 enhanced_rule_passed=false 的样本。
+本次审核未修改课程内容、scorer、persona、judge prompt、transfer_cases，也未调用真实 API。
 ```
 
-## Executive Summary
+## 总览结论
 
-The v3 scorer eliminated the previously reviewed false pass risk, but became more conservative. The current after_patch retry_002 result contains 18 false fail rows.
+scorer v3 已消除上一轮重点关注的 false pass 风险，但评分变得更保守。当前有效 after_patch retry_002 结果中共有 18 条 false fail。
 
-Classification summary:
+分类汇总：
 
-| classification | count | interpretation |
+| 分类 | 数量 | 含义 |
 |---|---:|---|
-| scorer_too_strict | 3 | The answer appears conceptually sufficient, and v3 likely missed a valid paraphrase. |
-| acceptable_conservative_fail | 5 | The judge passed the answer, but v3 is reasonably conservative because required evidence is partial or underspecified. |
-| judge_too_lenient | 7 | The answer contains an explicit misconception or contradiction, so enhanced failure is likely correct. |
-| needs_human_review | 3 | The answer is mixed enough that a human rubric decision should precede any scorer change. |
+| scorer_too_strict | 3 | 学生答案在概念上基本充分，v3 可能漏掉了有效改写。 |
+| acceptable_conservative_fail | 5 | judge 判为通过，但答案证据不完整或表达偏薄，v3 保守失败可以接受。 |
+| judge_too_lenient | 7 | 答案包含明确误解或自相矛盾，enhanced fail 更可能是正确结果。 |
+| needs_human_review | 3 | 答案混合了正确理解和风险表述，需要人工 rubric 决定。 |
 
-Recommended gate:
+建议闸门：
 
 ```text
-Do not broadly relax scorer v3.
-Only consider v3.1 for narrow, high-confidence paraphrase coverage in revenue_recognition and revenue_not_cash_receipt.
-Keep contradiction-heavy misconception answers failing.
-Course validation remains FAIL.
+不要广泛放松 scorer v3。
+仅考虑在 v3.1 中对 revenue_recognition 与 revenue_not_cash_receipt 做小范围、高置信 paraphrase 补强。
+保留对明确反向误解答案的失败判定。
+课程验证结论仍保持 FAIL。
 ```
 
-## Distribution
+## 分布统计
 
-By node:
+按节点：
 
 | node_id | false_fail_count |
 |---|---:|
@@ -50,7 +50,7 @@ By node:
 | income_statement_boundary | 2 |
 | depreciation_amortization | 2 |
 
-By condition:
+按 condition：
 
 | condition | false_fail_count |
 |---|---:|
@@ -58,7 +58,7 @@ By condition:
 | node_only | 6 |
 | hidden_transfer | 5 |
 
-By persona:
+按 persona：
 
 | student_persona | false_fail_count |
 |---|---:|
@@ -66,174 +66,177 @@ By persona:
 | rote_memorizer | 5 |
 | novice_closed_book | 3 |
 
-## Per-Case Review
+## 逐条审核
 
-| # | run_id | node_id | condition | persona | judge/enhanced | classification | v3.1 suggestion |
+| # | run_id | node_id | condition | persona | judge/enhanced | 分类 | v3.1 建议 |
 |---:|---|---|---|---|---|---|---|
-| 1 | 4e12cea729ecaa0a | revenue_recognition | node_only | novice_closed_book | 1.0 / 0.0 | scorer_too_strict | Add positive paraphrase test: service completed or goods delivered, not cash receipt, may recognize revenue. |
-| 2 | 585ba193316e1153 | revenue_not_cash_receipt | node_only | novice_closed_book | 0.6667 / 0.3333 | scorer_too_strict | Add positive paraphrase test for "income records earned result; collection records cash; credit sale creates timing gap." |
-| 3 | 49702d7924a64a2f | gross_margin | chain_so_far | novice_closed_book | 0.8 / 0.5 | acceptable_conservative_fail | No immediate relaxation; answer explains gross margin rate and period expenses but omits gross profit formula. |
-| 4 | bcb84f9ceba8fce9 | revenue_recognition | hidden_transfer | rote_memorizer | 0.6667 / 0.0 | acceptable_conservative_fail | Keep failing unless completion/delivery evidence is present; answer only says revenue is not cash. |
-| 5 | 4ab92215771f559d | revenue_not_cash_receipt | node_only | rote_memorizer | 1.0 / 0.3333 | scorer_too_strict | Same candidate as case 2, if no contradictory cash misconception appears. |
-| 6 | e4e4b528edb49ba4 | revenue_not_cash_receipt | chain_so_far | rote_memorizer | 0.7 / 0.3333 | acceptable_conservative_fail | Keep conservative; answer is directionally right but lacks explicit cash-not-increased or receivable evidence. |
-| 7 | 1101b9b1a3e1bef6 | net_profit | chain_so_far | rote_memorizer | 0.67 / 0.3333 | acceptable_conservative_fail | No v3.1 change; answer states net profit is not cash but gives no mechanism such as uncollected revenue or non-cash expense. |
-| 8 | 4e0aad17637d82ae | net_profit | hidden_transfer | rote_memorizer | 0.6667 / 0.3333 | acceptable_conservative_fail | No v3.1 change; answer misses the case calculation and concrete cash/profit mechanisms. |
-| 9 | 8bff312837528c9a | income_statement_boundary | node_only | misconception_prone | 0.6 / 0.3333 | judge_too_lenient | Keep failing; answer ends by treating a loan as a kind of revenue. |
-| 10 | 16d7b0406bfc8948 | income_statement_boundary | chain_so_far | misconception_prone | 0.67 / 0.3333 | needs_human_review | Mixed answer: starts with cash-as-income intuition but corrects toward financing source. Human rubric should decide tolerance. |
-| 11 | 57d885de1199748c | revenue_not_cash_receipt | node_only | misconception_prone | 0.6667 / 0.3333 | judge_too_lenient | Keep failing; answer explicitly says no cash means revenue should not be recognized. |
-| 12 | 1b8d3d51286c162a | revenue_not_cash_receipt | chain_so_far | misconception_prone | 0.6 / 0.3333 | judge_too_lenient | Keep failing; answer explicitly claims revenue increase should mean cash increase. |
-| 13 | 801b3238e4c0630e | depreciation_amortization | chain_so_far | misconception_prone | 0.6667 / 0.0 | needs_human_review | Mixed answer recognizes no cash outflow but remains confused about expense mechanics; review before scorer change. |
-| 14 | 99080fad5a427dab | depreciation_amortization | hidden_transfer | misconception_prone | 1.0 / 0.0 | judge_too_lenient | Keep failing; answer contains correct setup but ends with "depreciation should not be an expense." |
-| 15 | 84591106c3523017 | gross_margin | node_only | misconception_prone | 0.6667 / 0.3333 | judge_too_lenient | Keep failing; answer says high gross profit ultimately means profit, contradicting target concept. |
-| 16 | a40ddd549a31f9ec | gross_margin | hidden_transfer | misconception_prone | 0.6667 / 0.5 | judge_too_lenient | Keep failing; answer equates gross margin rate with net margin and net profit. |
-| 17 | a3c7062b5c479e04 | net_profit | chain_so_far | misconception_prone | 0.6667 / 0.3333 | needs_human_review | Mostly correct mechanism, but overgeneralizes that cash shortage is only temporary; human rubric should decide. |
-| 18 | f6001906a04e3a51 | net_profit | hidden_transfer | misconception_prone | 1.0 / 0.3333 | judge_too_lenient | Keep failing; answer calculates and explains correctly, then contradicts the target by saying positive profit should mean enough cash. |
+| 1 | 4e12cea729ecaa0a | revenue_recognition | node_only | novice_closed_book | 1.0 / 0.0 | scorer_too_strict | 增加正例 paraphrase 测试：已完成服务或交付商品，未收款也可能确认收入。 |
+| 2 | 585ba193316e1153 | revenue_not_cash_receipt | node_only | novice_closed_book | 0.6667 / 0.3333 | scorer_too_strict | 增加正例测试：收入记录赚到的经营成果，收款记录现金进入，赊销造成时间差。 |
+| 3 | 49702d7924a64a2f | gross_margin | chain_so_far | novice_closed_book | 0.8 / 0.5 | acceptable_conservative_fail | 暂不放松。答案解释了毛利率和期间费用，但缺少“毛利=收入-销售成本”。 |
+| 4 | bcb84f9ceba8fce9 | revenue_recognition | hidden_transfer | rote_memorizer | 0.6667 / 0.0 | acceptable_conservative_fail | 除非答案出现完成服务或交付证据，否则保持失败。该答案只说收入不等于现金。 |
+| 5 | 4ab92215771f559d | revenue_not_cash_receipt | node_only | rote_memorizer | 1.0 / 0.3333 | scorer_too_strict | 可与样本 2 一起作为候选正例，前提是没有现金认知反向误解。 |
+| 6 | e4e4b528edb49ba4 | revenue_not_cash_receipt | chain_so_far | rote_memorizer | 0.7 / 0.3333 | acceptable_conservative_fail | 保持保守。答案方向正确，但缺少“现金未增加”或“应收账款”等明确证据。 |
+| 7 | 1101b9b1a3e1bef6 | net_profit | chain_so_far | rote_memorizer | 0.67 / 0.3333 | acceptable_conservative_fail | 不建议 v3.1 修改。答案只说净利润不等于现金，缺少未收现收入或非现金费用机制。 |
+| 8 | 4e0aad17637d82ae | net_profit | hidden_transfer | rote_memorizer | 0.6667 / 0.3333 | acceptable_conservative_fail | 不建议 v3.1 修改。答案缺少本题 8000 元计算，也缺少具体利润和现金差异机制。 |
+| 9 | 8bff312837528c9a | income_statement_boundary | node_only | misconception_prone | 0.6 / 0.3333 | judge_too_lenient | 保持失败。答案最后仍把借款视为收入的一种。 |
+| 10 | 16d7b0406bfc8948 | income_statement_boundary | chain_so_far | misconception_prone | 0.67 / 0.3333 | needs_human_review | 混合答案。开头有“收到现金应算收入”的直觉，后文又修正为资金来源，需人工决定容忍度。 |
+| 11 | 57d885de1199748c | revenue_not_cash_receipt | node_only | misconception_prone | 0.6667 / 0.3333 | judge_too_lenient | 保持失败。答案明确说没收到钱就不应确认收入。 |
+| 12 | 1b8d3d51286c162a | revenue_not_cash_receipt | chain_so_far | misconception_prone | 0.6 / 0.3333 | judge_too_lenient | 保持失败。答案明确认为收入增加就应意味着现金增加。 |
+| 13 | 801b3238e4c0630e | depreciation_amortization | chain_so_far | misconception_prone | 0.6667 / 0.0 | needs_human_review | 混合答案。意识到没有现金流出，但对费用机制仍明显困惑，修改 scorer 前需人工判断。 |
+| 14 | 99080fad5a427dab | depreciation_amortization | hidden_transfer | misconception_prone | 1.0 / 0.0 | judge_too_lenient | 保持失败。答案前半正确，但最后说折旧不应算费用。 |
+| 15 | 84591106c3523017 | gross_margin | node_only | misconception_prone | 0.6667 / 0.3333 | judge_too_lenient | 保持失败。答案声称毛利高最终肯定赚钱，与目标概念冲突。 |
+| 16 | a40ddd549a31f9ec | gross_margin | hidden_transfer | misconception_prone | 0.6667 / 0.5 | judge_too_lenient | 保持失败。答案把毛利率等同于净利率，并把毛利等同于净利润。 |
+| 17 | a3c7062b5c479e04 | net_profit | chain_so_far | misconception_prone | 0.6667 / 0.3333 | needs_human_review | 基本机制较正确，但又泛化为现金短缺只是暂时的，需人工判断。 |
+| 18 | f6001906a04e3a51 | net_profit | hidden_transfer | misconception_prone | 1.0 / 0.3333 | judge_too_lenient | 保持失败。答案完成计算和部分解释，但最后说净利润为正公司应不缺钱。 |
 
-## Node-Level Findings
+## 节点级发现
 
 ### revenue_recognition
 
-False fail count: 2.
+false fail 数量：2。
 
-One high-confidence scorer strictness case exists. Case 1 is a strong answer: it mentions service completion, distinguishes cash receipt, and concludes revenue may be recognized. v3 missed this because the semantic evidence is phrased as a sentence-level explanation rather than matching its expected point patterns.
+样本 1 是高置信 scorer 过严案例。答案明确提到服务完成、区分收款，并得出本月可确认收入的结论。v3 没命中，主要是因为学生用完整句子表达了语义证据，而没有命中当前 expected point 的具体模式。
 
-Case 4 is weaker. It says revenue recognition is not equal to receiving cash, but does not explicitly anchor recognition to completed service or delivery. Keep it as an acceptable conservative failure.
+样本 4 较弱。它只说收入确认不等于收到现金，没有明确把确认收入锚定到服务完成或商品交付。因此更适合作为 acceptable_conservative_fail。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-PASS when an answer clearly says completed service/goods delivery can satisfy revenue recognition and cash receipt is not required.
-Do not PASS when the answer only says "revenue is not cash" without completion/delivery evidence.
+当答案明确说明“服务完成/商品交付可满足收入确认条件，且不依赖现金到账”时，应允许通过。
+仅说“收入不是现金”但没有完成服务或交付证据时，不应通过。
 ```
 
 ### revenue_not_cash_receipt
 
-False fail count: 5.
+false fail 数量：5。
 
-Cases 2 and 5 are the strongest scorer strictness evidence. They distinguish revenue as earned operating result from cash collection, and explain that credit sales create a timing gap. The answer does not use "accounts receivable", but conceptually explains why cash may not increase.
+样本 2 和样本 5 是最强的 scorer 过严证据。它们区分了“收入记录赚到的经营成果”和“收款记录现金进入”，并说明赊销会造成收入与现金流入的时间差。虽然没有使用“应收账款”字样，但已经能解释为什么确认收入时现金可能没有增加。
 
-Case 6 is directionally correct but thinner, so the v3 fail is acceptable. Cases 11 and 12 contain explicit cash-revenue misconceptions, so they should remain failing.
+样本 6 方向正确但证据较薄，所以 v3 fail 可以接受。样本 11 和样本 12 含有明确现金收入误解，应继续失败。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-PASS if the answer explains both sides of the distinction:
-1. revenue is recognized as earned/operating result, and
-2. collection/cash inflow can occur later because a credit sale creates a timing gap.
+如果答案同时说明：
+1. 收入是已赚取或经营成果的确认；
+2. 收款或现金流入可能发生在以后，赊销会造成时间差；
+则可以考虑通过。
 
-Still FAIL if the answer says no cash means no revenue, or revenue increase must mean cash increase.
+如果答案声称没收现金就不能确认收入，或收入增加必须意味着现金增加，则仍应失败。
 ```
 
 ### gross_margin
 
-False fail count: 3.
+false fail 数量：3。
 
-No broad scorer relaxation is recommended. Case 3 is a reasonable conceptual answer, but it omits the gross profit formula. Because v3 was intentionally patched to prevent formula-light gross_margin false passes, this is best treated as an acceptable conservative failure unless a human approves question-aware relaxation.
+不建议广泛放松 scorer。样本 3 是合理的概念性答案，但缺少“毛利=收入-销售成本”。由于 v3 正是为了避免 gross_margin 中公式证据不足的 false pass，除非人工明确认可按题目类型放宽，否则该样本更适合保留为 acceptable_conservative_fail。
 
-Cases 15 and 16 should fail. Both include target-conflicting claims: high gross profit ultimately means profit, or gross margin rate equals net margin.
+样本 15 和样本 16 应保持失败。两者都包含与目标概念冲突的结论：毛利高最终肯定赚钱，或毛利率等于净利率。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-Only consider question-aware relaxation if human reviewers decide that a "why gross margin is not net profit" question can pass without restating gross profit = revenue - COGS.
-Keep formula and contradiction regression tests intact.
+只有在人工确认“为什么毛利率高不等于净利润高”类问题可以不重复毛利公式时，才考虑题目感知型放宽。
+保留公式证据和反向误解回归测试。
 ```
 
 ### net_profit
 
-False fail count: 4.
+false fail 数量：4。
 
-Cases 7 and 8 are acceptable conservative failures: they state net profit is not cash but omit concrete mechanisms, and case 8 also omits the required 8000 calculation.
+样本 7 和样本 8 是合理保守失败。它们说明净利润不等于现金，但没有给出未收现收入、非现金费用等具体机制；样本 8 还缺少本题要求的 8000 元计算。
 
-Case 17 is mixed. It correctly names uncollected revenue and non-cash expenses, but then overgeneralizes cash shortage as temporary. Case 18 is stronger on calculation and mechanism, but ends with a misconception that positive net profit means the company should not lack money. This looks more like judge leniency than scorer strictness.
+样本 17 是混合答案。它正确提到未收现收入和非现金费用，但又把现金短缺泛化为暂时问题。样本 18 在计算和机制上较充分，但最后明确说净利润为正公司应该不缺钱。这更像 judge_too_lenient，而不是 scorer_too_strict。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-No scorer relaxation until human review decides how to handle answers with a correct explanation followed by a contradictory final sentence.
+在人工决定如何处理“先正确解释，最后又给出矛盾结论”的答案之前，不建议放松 net_profit。
 ```
 
 ### depreciation_amortization
 
-False fail count: 2.
+false fail 数量：2。
 
-No scorer relaxation is recommended. Both cases contain mixed or contradictory reasoning about whether depreciation can be an expense without current cash payment. Case 14 in particular should not receive a full pass because it ends by saying depreciation should not count as an expense.
+不建议放松 scorer。两个样本都在“折旧是否可以不伴随当期现金流出而影响利润”上有混合或矛盾表述。样本 14 尤其不应通过，因为它最后说今年没付现金所以折旧不应算费用。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-Keep current conservative handling.
-If changed later, add explicit tests that final contradictory statements override earlier correct statements.
+保持当前保守策略。
+如果未来调整，应增加明确测试：答案末尾的反向结论应覆盖前面的正确片段。
 ```
 
 ### income_statement_boundary
 
-False fail count: 2.
+false fail 数量：2。
 
-Case 9 should fail because it treats a loan as revenue after briefly explaining the correct distinction. Case 10 is mixed: it begins with the same cash-as-income intuition, then corrects itself and states the loan is only a funding source, not operating revenue.
+样本 9 应失败，因为它在简短解释正确区别之后，仍把借款视为收入。样本 10 较混合：开头有“收到现金应算收入”的直觉，但后文修正为借款只是资金来源，不是经营收入。
 
-v3.1 candidate:
+v3.1 候选规则：
 
 ```text
-No immediate scorer change. Human review should decide whether self-correction should pass when the final answer is correct.
+暂不修改 scorer。是否允许“先误解、后自我修正且最终结论正确”的答案通过，需要人工 rubric 决定。
 ```
 
-## Suggested v3.1 Test Cases
+## 建议的 v3.1 测试清单
 
-High-confidence positive tests:
+高置信正例：
 
-| target | source case | expected |
+| 目标 | 来源样本 | 期望 |
 |---|---|---|
-| revenue_recognition paraphrase with completion and no cash receipt | 4e12cea729ecaa0a | enhanced_rule_passed=true |
-| revenue_not_cash_receipt timing-gap explanation without "accounts receivable" wording | 585ba193316e1153 | enhanced_rule_passed=true |
-| revenue_not_cash_receipt same timing-gap explanation by rote persona | 4ab92215771f559d | enhanced_rule_passed=true |
+| revenue_recognition 中“完成服务且未收款也可确认收入”的改写 | 4e12cea729ecaa0a | enhanced_rule_passed=true |
+| revenue_not_cash_receipt 中没有“应收账款”字样但能说明时间差 | 585ba193316e1153 | enhanced_rule_passed=true |
+| rote persona 下相同时间差解释 | 4ab92215771f559d | enhanced_rule_passed=true |
 
-High-confidence negative tests:
+高置信负例：
 
-| target | source case | expected |
+| 目标 | 来源样本 | 期望 |
 |---|---|---|
-| no-cash-means-no-revenue misconception | 57d885de1199748c | enhanced_rule_passed=false |
-| revenue-increase-means-cash-increase misconception | 1b8d3d51286c162a | enhanced_rule_passed=false |
-| loan treated as revenue | 8bff312837528c9a | enhanced_rule_passed=false |
-| depreciation should not be an expense without cash payment | 99080fad5a427dab | enhanced_rule_passed=false |
-| gross margin equals net margin or net profit | a40ddd549a31f9ec | enhanced_rule_passed=false |
-| positive net profit means enough cash | f6001906a04e3a51 | enhanced_rule_passed=false |
+| 没收现金就不能确认收入 | 57d885de1199748c | enhanced_rule_passed=false |
+| 收入增加必须意味着现金增加 | 1b8d3d51286c162a | enhanced_rule_passed=false |
+| 将借款视为收入 | 8bff312837528c9a | enhanced_rule_passed=false |
+| 认为没有当期现金支付所以折旧不应算费用 | 99080fad5a427dab | enhanced_rule_passed=false |
+| 将毛利率等同于净利率或净利润 | a40ddd549a31f9ec | enhanced_rule_passed=false |
+| 认为净利润为正就说明现金充足 | f6001906a04e3a51 | enhanced_rule_passed=false |
 
-Human-review candidate tests:
+人工复核候选：
 
-| target | source case | reason |
+| 目标 | 来源样本 | 原因 |
 |---|---|---|
-| income_statement_boundary self-correction | 16d7b0406bfc8948 | Final answer is mostly correct, but starts from a misconception. |
-| depreciation no-cash confusion | 801b3238e4c0630e | Recognizes no cash outflow, but does not explain cost allocation cleanly. |
-| net_profit correct mechanism plus overgeneralized cash statement | a3c7062b5c479e04 | Core concept is present, final implication is risky. |
+| income_statement_boundary 中的自我修正答案 | 16d7b0406bfc8948 | 最终结论基本正确，但开头带有误解。 |
+| depreciation_amortization 中的无现金困惑 | 801b3238e4c0630e | 认识到没有现金流出，但没有清楚解释成本分摊。 |
+| net_profit 中正确机制加风险泛化 | a3c7062b5c479e04 | 核心概念存在，但最后关于现金短缺的判断偏危险。 |
 
-## Risk Assessment
+## 风险评估
 
-False fail risk:
-
-```text
-Moderate. v3 is stricter than v2 and misses a few valid paraphrases, especially around revenue/cash timing.
-```
-
-False pass risk if v3 is relaxed:
+false fail 风险：
 
 ```text
-High unless changes are narrow. Many false fail rows contain explicit misconceptions that the judge passed, especially for misconception_prone samples.
+中等。v3 比 v2 更严格，尤其在收入与现金时间差相关节点上漏掉了少数有效改写。
 ```
 
-Overfitting risk:
+如果放松 v3 的 false pass 风险：
 
 ```text
-Low to moderate. The current issue is more exact-evidence matching than mastery-question memorization. Any v3.1 fix should be pattern-light and concept-based, with paired negative tests for contradictions.
+高。许多 false fail 样本包含明确误解，尤其集中在 misconception_prone persona。
+如果不做窄范围规则和负例测试，容易重新引入 false pass。
 ```
 
-## Conclusion
+过拟合风险：
+
+```text
+低到中等。当前问题更像证据匹配过窄，而不是 mastery question 记忆化。
+若进入 v3.1，应采用概念级、窄范围补强，并配套反向误解负例测试。
+```
+
+## 结论
 
 ```text
 false_fail_review: COMPLETE
 recommended_status: PARTIAL_PASS
 course_validation_status: FAIL
-next_gate: human review before any scorer v3.1 implementation
+next_gate: human review before scorer v3.1 implementation
 ```
 
-This review supports a small v3.1 plan only for high-confidence paraphrase coverage in `revenue_recognition` and `revenue_not_cash_receipt`. It does not support broad scorer relaxation, course edits, or a new real API run at this stage.
+本审核只支持一个小范围 v3.1 计划：针对 `revenue_recognition` 和 `revenue_not_cash_receipt` 的高置信有效改写补充覆盖。当前不支持广泛放松 scorer，不支持课程修改，也不支持立刻重新运行真实 API。
