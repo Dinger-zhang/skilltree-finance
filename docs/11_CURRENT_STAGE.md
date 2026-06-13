@@ -642,3 +642,55 @@ v3.1 是 scorer hygiene 小修，不能改写课程验证结论。
 本阶段没有修改课程，没有运行真实 API。
 当前应暂停，等待人工审核 v3.1 diff 与中文报告，再决定是否需要新的真实实验或课程二次 patch。
 ```
+
+### 记录 009
+
+状态：已根据最新 v3.1 本地 rescore 刷新主 comparison/stage 报告，等待人工审核课程失败样本。
+
+触发原因：
+
+```text
+用户在 v3.1 小修提交后要求继续。
+本次继续不进入真实 API 实验，而是先同步主报告，避免 comparison_report.md 与 stage_report.md 仍停留在旧 enhanced scorer 视图。
+```
+
+更新文件：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/comparison_report.md
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/stage_report.md
+docs/11_CURRENT_STAGE.md
+```
+
+报告口径：
+
+```text
+judge_* 指标来自真实 before/after 实验，可用于课程效果判断。
+after enhanced_rule_* 指标来自 scorer v3.1 本地 rescore。
+enhanced delta 只能作为 scorer hygiene 与风险信号，不能单独当作课程效果证据。
+```
+
+当前核心指标：
+
+```text
+overall judge_passed: 55/96 (57.3%) -> 47/96 (49.0%)
+hidden_transfer judge_passed: 22/24 (91.7%) -> 18/24 (75.0%)
+enhanced false pass: 3 -> 0
+enhanced false fail: 13 -> 15
+```
+
+结论：
+
+```text
+structural_validity: PASS
+scorer_v3_1_hygiene: PASS
+course_patch_validation: FAIL
+```
+
+下一步闸门：
+
+```text
+不建议直接运行新的真实 API。
+应先人工审核课程失败样本，尤其是 accrual_vs_cash、gross_margin、net_profit。
+如确认课程仍需调整，再提出第二轮小范围课程 patch 计划。
+```
