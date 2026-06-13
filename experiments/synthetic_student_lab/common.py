@@ -931,6 +931,7 @@ CONTRADICTION_PATTERNS: dict[str, list[str]] = {
         "收入增加就代表现金增加",
         "收入就是现金流入",
         "收入就是收款",
+        "收入等于收款",
     ],
     "cash_required_for_revenue": [
         "没收到钱所以不算收入",
@@ -945,6 +946,12 @@ CONTRADICTION_PATTERNS: dict[str, list[str]] = {
         "没有收到现金不能确认收入",
         "收入确认看的是有没有收到钱",
         "收入确认必须等到实际收款",
+        "收入必须是在收到现金时才能确认",
+        "收入应该在下月收到现金时确认",
+        "收到现金时确认",
+        "下月收到现金时确认",
+        "没收到钱就不能算收入",
+        "没收到现金就不能算收入",
         "必须等到实际收款",
     ],
     "payment_required_for_expense": [
@@ -971,6 +978,9 @@ CONTRADICTION_PATTERNS: dict[str, list[str]] = {
         "折旧就是每月付款",
         "折旧就是现金流出",
         "折旧代表当期付款",
+        "折旧实际上就是每个月为资产付出去的钱",
+        "折旧也算是现金流出",
+        "折旧算是现金流出",
     ],
     "accrual_cash_basis_confusion": [
         "权责发生制主要看现金是否实际收付",
@@ -1030,6 +1040,12 @@ EXPENSE_RECOGNITION_REASONING_POINTS = {
     "费用是为取得收入或维持经营发生的耗费": "expense_consumption_reason",
     "费用发生不一定等于当期已经付款": "expense_not_payment_reason",
     "工资费用会减少本期利润": "expense_period_profit_reason",
+}
+
+GROSS_MARGIN_REASONING_POINTS = {
+    "毛利等于收入减销售成本": "gross_margin_amount_formula",
+    "毛利率等于毛利除以收入": "gross_margin_rate_formula",
+    "毛利还没有扣除销售管理研发财务等期间费用": "gross_margin_period_expense_boundary",
 }
 
 
@@ -1156,12 +1172,61 @@ def expense_recognition_evidence(answer: str) -> dict[str, bool]:
     }
 
 
+def gross_margin_evidence(answer: str) -> dict[str, bool]:
+    answer_n = evidence_normalize_text(answer)
+    amount_formula = evidence_has_any(
+        answer_n,
+        [
+            "毛利等于收入减销售成本",
+            "毛利=收入-销售成本",
+            "毛利是收入减销售成本",
+            "收入减销售成本",
+            "10000-6500",
+            "1000065003500",
+            "10000减6500得到3500",
+        ],
+    )
+    rate_formula = evidence_has_any(
+        answer_n,
+        [
+            "毛利率等于毛利除以收入",
+            "毛利率=毛利/收入",
+            "毛利率是毛利除以收入",
+            "毛利除以收入",
+            "3500/10000",
+            "350010000",
+            "35%",
+        ],
+    )
+    period_boundary = evidence_has_any(
+        answer_n,
+        [
+            "期间费用",
+            "销售费用",
+            "管理费用",
+            "研发费用",
+            "财务费用",
+            "还没有扣除",
+            "尚未扣除",
+            "还不是净利润",
+            "不是净利润",
+            "净利润还需要减去其他费用",
+        ],
+    )
+    return {
+        "gross_margin_amount_formula": amount_formula,
+        "gross_margin_rate_formula": rate_formula,
+        "gross_margin_period_expense_boundary": period_boundary,
+    }
+
+
 def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
     answer_n = enhanced_normalize_text(answer)
     point_n = enhanced_normalize_text(point_text)
     reasons = []
     net_profit_evidence_map = net_profit_evidence(answer)
     expense_evidence_map = expense_recognition_evidence(answer)
+    gross_margin_evidence_map = gross_margin_evidence(answer)
 
     if has_any(point_n, ["利润表", "经营成果"]) and has_any(
         answer_n,
@@ -1171,7 +1236,7 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
 
     if has_any(point_n, ["销售商品", "提供服务", "收入"]) and has_any(
         answer_n,
-        ["销售商品", "提供服务", "商品已经卖出", "已经交付", "卖咖啡", "出售咖啡", "完成服务", "收入确认"],
+        ["销售商品", "提供服务", "商品已经卖出", "已经交付", "卖咖啡", "出售咖啡", "完成服务"],
     ):
         reasons.append("semantic:sales_or_service_revenue")
 
@@ -1183,7 +1248,7 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
 
     if has_any(point_n, ["收入确认", "未收现金", "现金不一定", "现金收款"]) and has_any(
         answer_n,
-        ["收入确认", "可以确认收入", "确认收入"],
+        ["可以确认收入", "仍可能确认收入", "仍可确认收入", "本月确认收入", "先确认收入"],
     ) and has_any(answer_n, ["还没现金收款", "没有现金收款", "未现金收款", "现金没有增加", "现金不变", "客户尚未付款"]):
         reasons.append("semantic:revenue_recognition_not_cash")
 
@@ -1203,13 +1268,13 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
 
     if has_any(point_n, ["折旧", "长期资产", "成本分摊", "现金"]) and has_any(
         answer_n,
-        ["折旧", "折旧成本分摊", "长期资产", "多个期间", "受益期间"],
+        ["折旧成本分摊", "长期资产", "多个期间", "受益期间"],
     ):
         reasons.append("semantic:depreciation_allocation")
 
     if has_any(point_n, ["折旧", "减少当期利润", "现金流出"]) and has_any(
         answer_n,
-        ["折旧", "减少利润", "影响利润", "不是现金流出", "不是再次付款", "非现金"],
+        ["不是现金流出", "不是再次付款", "非现金", "不代表当期现金流出"],
     ):
         reasons.append("semantic:depreciation_profit_not_cash")
 
@@ -1246,15 +1311,16 @@ def enhanced_semantic_match_reasons(answer: str, point_text: str) -> list[str]:
     ):
         reasons.append("semantic:cash_basis_receipts_payments")
 
-    if has_any(point_n, ["毛利", "销售成本"]) and has_any(answer_n, ["毛利", "收入减销售成本", "1000065003500", "3500"]):
+    gross_margin_reason = GROSS_MARGIN_REASONING_POINTS.get(point_text)
+    if gross_margin_reason == "gross_margin_amount_formula" and gross_margin_evidence_map[gross_margin_reason]:
         reasons.append("semantic:gross_margin_amount")
 
-    if has_any(point_n, ["毛利率"]) and has_any(answer_n, ["毛利率", "350010000", "35"]):
+    if gross_margin_reason == "gross_margin_rate_formula" and gross_margin_evidence_map[gross_margin_reason]:
         reasons.append("semantic:gross_margin_rate")
 
-    if has_any(point_n, ["期间费用", "销售管理研发财务"]) and has_any(
-        answer_n,
-        ["期间费用", "销售费用", "管理费用", "财务费用", "还不是净利润", "尚未扣除"],
+    if (
+        gross_margin_reason == "gross_margin_period_expense_boundary"
+        and gross_margin_evidence_map[gross_margin_reason]
     ):
         reasons.append("semantic:period_expenses")
 
@@ -1344,6 +1410,12 @@ def enhanced_rule_scorer(
     if set(EXPENSE_RECOGNITION_REASONING_POINTS).issubset(expected_texts):
         evidence = expense_recognition_evidence(answer)
         minimum_evidence["expense_recognition"] = evidence
+    if set(GROSS_MARGIN_REASONING_POINTS).issubset(expected_texts):
+        evidence = gross_margin_evidence(answer)
+        minimum_evidence["gross_margin"] = evidence
+        if not (evidence["gross_margin_amount_formula"] and evidence["gross_margin_rate_formula"]):
+            score = min(score, 0.5)
+            scoring_notes.append("gross_margin formula evidence cap applied")
     if contradiction_detected and matched:
         score = min(0.5, max(0.0, score - 0.34))
         scoring_notes.append(

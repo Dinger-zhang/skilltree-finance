@@ -32,6 +32,30 @@ ACCRUAL_VS_CASH_POINTS = [
     "现金制关注现金实际收付时间",
 ]
 
+REVENUE_RECOGNITION_POINTS = [
+    "收入来自销售商品或提供服务",
+    "完成交付或服务后可能满足收入确认条件",
+    "收入确认不一定依赖现金已经到账",
+]
+
+REVENUE_NOT_CASH_POINTS = [
+    "赊销可能先确认收入",
+    "未收现金时现金不一定增加",
+    "可能形成应收账款而不是现金流入",
+]
+
+DEPRECIATION_POINTS = [
+    "折旧是长期资产成本在多个期间的分摊",
+    "折旧费用会减少当期利润",
+    "折旧通常不是当期现金流出",
+]
+
+GROSS_MARGIN_POINTS = [
+    "毛利等于收入减销售成本",
+    "毛利率等于毛利除以收入",
+    "毛利还没有扣除销售管理研发财务等期间费用",
+]
+
 
 def score(answer: str, expected_points: list[str]) -> dict:
     return enhanced_rule_scorer(answer, expected_points, PASS_RATIO)
@@ -83,6 +107,64 @@ def test_accrual_vs_cash_reversed_definition_should_fail() -> None:
     result = score(
         "权责发生制关注现金是否实际收付，而现金制关注交易归属期间。没付款就没有费用。",
         ACCRUAL_VS_CASH_POINTS,
+    )
+
+    assert result["contradiction_detected"] is True
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_gross_margin_boundary_only_answer_should_not_pass() -> None:
+    result = score(
+        "因为毛利还不是净利润。",
+        GROSS_MARGIN_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is False
+    assert result["enhanced_rule_score"] <= 0.5
+
+
+def test_gross_margin_missing_rate_formula_should_not_pass() -> None:
+    result = score(
+        "根据材料，毛利等于收入减销售成本，但毛利还不是净利润，因此毛利率高不等于净利润一定高。",
+        GROSS_MARGIN_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_revenue_recognition_cash_only_answer_should_not_pass() -> None:
+    result = score(
+        "材料说，收入确认不一定等于收到现金。",
+        REVENUE_RECOGNITION_POINTS,
+    )
+
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_revenue_recognition_cash_required_contradiction_should_fail() -> None:
+    result = score(
+        "不能确认收入，因为还没收到现金。客户下月才付款，所以收入应该在下月收到现金时确认。",
+        REVENUE_RECOGNITION_POINTS,
+    )
+
+    assert result["contradiction_detected"] is True
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_revenue_not_cash_contradiction_should_fail() -> None:
+    result = score(
+        "本月利润表上不应该确认收入，因为没有收到现金。收入必须是在收到现金时才能确认，所以收入等于收款。",
+        REVENUE_NOT_CASH_POINTS,
+    )
+
+    assert result["contradiction_detected"] is True
+    assert result["enhanced_rule_passed"] is False
+
+
+def test_depreciation_cash_outflow_contradiction_should_fail() -> None:
+    result = score(
+        "折旧减少利润是因为它被计入费用，但折旧实际上就是每个月为资产付出去的钱，所以它也算是现金流出。",
+        DEPRECIATION_POINTS,
     )
 
     assert result["contradiction_detected"] is True

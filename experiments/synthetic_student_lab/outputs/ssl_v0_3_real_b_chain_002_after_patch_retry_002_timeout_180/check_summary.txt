@@ -1,0 +1,123 @@
+Synthetic Student Lab Output Check
+output_dir: experiments\synthetic_student_lab\outputs\ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+simulation_runs: experiments\synthetic_student_lab\outputs\ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180\simulation_runs.jsonl
+judge_results: experiments\synthetic_student_lab\outputs\ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180\judge_results.jsonl
+
+Basic counts:
+  - simulation_runs.jsonl rows: 96
+  - judge_results.jsonl rows: 96
+
+run_id correspondence:
+  - one_to_one: True
+  - missing_in_judge: 0
+  - extra_in_judge: 0
+  - duplicated_in_simulation: 0
+  - duplicated_in_judge: 0
+
+student_persona distribution:
+  - misconception_prone: 32
+  - novice_closed_book: 32
+  - rote_memorizer: 32
+
+condition distribution:
+  - chain_so_far: 24
+  - hidden_transfer: 24
+  - no_course_baseline: 24
+  - node_only: 24
+
+node_id distribution:
+  - accrual_vs_cash: 12
+  - depreciation_amortization: 12
+  - expense_recognition: 12
+  - gross_margin: 12
+  - income_statement_boundary: 12
+  - net_profit: 12
+  - revenue_not_cash_receipt: 12
+  - revenue_recognition: 12
+
+conflict_type distribution:
+  - both_fail: 48
+  - both_pass: 5
+  - rule_fail_llm_pass: 42
+  - rule_pass_llm_fail: 1
+
+judge_passed distribution:
+  - false: 49
+  - true: 47
+
+rule_passed distribution:
+  - false: 90
+  - true: 6
+
+judge_passed pass rate by condition:
+  - chain_so_far: 18/24 (75.0%)
+  - hidden_transfer: 18/24 (75.0%)
+  - no_course_baseline: 0/24 (0.0%)
+  - node_only: 11/24 (45.8%)
+
+judge_passed pass rate by persona:
+  - misconception_prone: 12/32 (37.5%)
+  - novice_closed_book: 20/32 (62.5%)
+  - rote_memorizer: 15/32 (46.9%)
+
+judge_passed pass rate by node_id:
+  - accrual_vs_cash: 1/12 (8.3%)
+  - depreciation_amortization: 8/12 (66.7%)
+  - expense_recognition: 5/12 (41.7%)
+  - gross_margin: 5/12 (41.7%)
+  - income_statement_boundary: 9/12 (75.0%)
+  - net_profit: 6/12 (50.0%)
+  - revenue_not_cash_receipt: 8/12 (66.7%)
+  - revenue_recognition: 5/12 (41.7%)
+
+judge_passed pass rate by node_id x condition:
+  - accrual_vs_cash x chain_so_far: 0/3 (0.0%)
+  - accrual_vs_cash x hidden_transfer: 1/3 (33.3%)
+  - accrual_vs_cash x no_course_baseline: 0/3 (0.0%)
+  - accrual_vs_cash x node_only: 0/3 (0.0%)
+  - depreciation_amortization x chain_so_far: 3/3 (100.0%)
+  - depreciation_amortization x hidden_transfer: 3/3 (100.0%)
+  - depreciation_amortization x no_course_baseline: 0/3 (0.0%)
+  - depreciation_amortization x node_only: 2/3 (66.7%)
+  - expense_recognition x chain_so_far: 3/3 (100.0%)
+  - expense_recognition x hidden_transfer: 1/3 (33.3%)
+  - expense_recognition x no_course_baseline: 0/3 (0.0%)
+  - expense_recognition x node_only: 1/3 (33.3%)
+  - gross_margin x chain_so_far: 1/3 (33.3%)
+  - gross_margin x hidden_transfer: 3/3 (100.0%)
+  - gross_margin x no_course_baseline: 0/3 (0.0%)
+  - gross_margin x node_only: 1/3 (33.3%)
+  - income_statement_boundary x chain_so_far: 3/3 (100.0%)
+  - income_statement_boundary x hidden_transfer: 3/3 (100.0%)
+  - income_statement_boundary x no_course_baseline: 0/3 (0.0%)
+  - income_statement_boundary x node_only: 3/3 (100.0%)
+  - net_profit x chain_so_far: 3/3 (100.0%)
+  - net_profit x hidden_transfer: 3/3 (100.0%)
+  - net_profit x no_course_baseline: 0/3 (0.0%)
+  - net_profit x node_only: 0/3 (0.0%)
+  - revenue_not_cash_receipt x chain_so_far: 3/3 (100.0%)
+  - revenue_not_cash_receipt x hidden_transfer: 2/3 (66.7%)
+  - revenue_not_cash_receipt x no_course_baseline: 0/3 (0.0%)
+  - revenue_not_cash_receipt x node_only: 3/3 (100.0%)
+  - revenue_recognition x chain_so_far: 2/3 (66.7%)
+  - revenue_recognition x hidden_transfer: 2/3 (66.7%)
+  - revenue_recognition x no_course_baseline: 0/3 (0.0%)
+  - revenue_recognition x node_only: 1/3 (33.3%)
+
+Data quality checks:
+  - error_message non-empty count: 0
+  - student_answer empty count: 0
+  - judge_score out of [0, 1] count: 0
+  - rule_score out of [0, 1] count: 0
+
+judge_score min/max/avg: 0.0000 / 1.0000 / 0.4811
+rule_score min/max/avg: 0.0000 / 1.0000 / 0.1207
+
+simulation_runs required field check:
+  - none
+
+judge_results required field check:
+  - none
+
+Overall:
+  - no severe structural problems detected

@@ -1,10 +1,10 @@
 # 当前阶段状态
 
-最后更新：2026-06-12
+最后更新：2026-06-13
 
 ## 1. 当前阶段
 
-当前阶段：**Synthetic Student Lab repaired baseline + enhanced scorer v2 已验收通过，课程三点小修补已完成，等待人工审核 diff；尚未运行 after_patch。**
+当前阶段：**Synthetic Student Lab repaired baseline + enhanced scorer v2 已验收通过，课程三点小修补已完成并进入 after_patch；retry_002 已生成结构有效输出与 comparison_report，当前结论为 FAIL，等待人工审核。**
 
 产品主线仍是 SkillTree Finance / AI 学习树的财务报表学习 MVP。Synthetic Student Lab 的定位仍然是离线课程质检工具，不进入正式学习主流程，不替代真实学生实验。
 
@@ -14,8 +14,11 @@
 Enhanced scorer v2：PASS
 SSL repaired baseline：VALID
 课程三点小修补：DONE
-下一步：人工审核 data/knowledge_graph.yaml diff
-后续：经人工批准后再运行 after_patch 对比实验，验证修改是否改善课程质量
+after_patch retry_002：STRUCTURALLY_VALID
+comparison_report：GENERATED
+当前结论：FAIL
+下一步：人工审核 comparison_report 与 human_review_samples
+后续：人工决定是否做 targeted retry、课程修订、scorer 审查或停止本轮课程 patch
 ```
 
 ## 2. 已完成事项
@@ -115,9 +118,11 @@ v2 已修复两个关键问题：
 
 当前目标从“跑完整 B 链真实实验”转为：
 
-> 基于 repaired baseline + enhanced scorer v2，只对 3 个课程节点做小范围 patch，先等待人工审核 diff；审核通过后再运行 after_patch 对比实验，判断 Synthetic Student Lab 是否能指导课程改进。
+> 基于 repaired baseline + enhanced scorer v2，只对 3 个课程节点做小范围 patch，并运行 after_patch 对比实验，判断 Synthetic Student Lab 是否能指导课程改进。
 
 当前不再继续大修 scorer，除非 after_patch 暴露新的明显评分漏洞。
+
+当前 after_patch retry_002 已完成。输出结构有效，但 comparison 结果未验证课程 patch 有效性：总体 LLM judge 通过率下降，hidden_transfer LLM judge 通过率下降，enhanced-rule false pass 风险上升。
 
 ## 4. 当前建议修改的 3 个课程节点
 
@@ -325,3 +330,150 @@ pytest enhanced scorer: 5 passed, 1 dependency deprecation warning
 ```
 
 当前结论：需要人工审核 `git diff data/knowledge_graph.yaml`。尚未运行 after_patch，也未进入 `experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch/`。
+
+### 记录 005
+
+状态：after_patch retry_002 已完成，结构有效，但 comparison 结论为 FAIL。
+
+背景：
+
+```text
+第一次 after_patch 与 retry_001 均因外部 API read timeout 产生大量 bad records，不能作为有效 before/after 对比。
+随后将 experiments/synthetic_student_lab/config.yaml 中 student_client 与 judge_client 的 timeout_seconds 从 60 提高到 180。
+```
+
+有效 after_patch 输出目录：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180/
+```
+
+comparison 输出目录：
+
+```text
+experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_comparison/
+```
+
+已运行命令：
+
+```bash
+python -m compileall -q app.py pages src tests experiments
+python -m pytest experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py -q
+python experiments/synthetic_student_lab/run_simulation.py --real-mode --output-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+python experiments/synthetic_student_lab/judge.py --real-mode --output-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+python experiments/synthetic_student_lab/failure_analyzer.py --real-mode --output-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+python check_ssl_outputs.py --output-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+python experiments/synthetic_student_lab/inspect_ssl_issues.py --output-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+python experiments/synthetic_student_lab/rescore_with_enhanced_rules.py --input-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+```
+
+结构检查结果：
+
+```text
+simulation_runs.jsonl rows: 96
+judge_results.jsonl rows: 96
+run_id one_to_one: True
+error_message non-empty count: 0
+student_answer empty count: 0
+required field check: none
+severe structural problems: none
+```
+
+comparison 核心结果：
+
+```text
+overall judge_passed: 55/96 (57.3%) -> 47/96 (49.0%)
+overall enhanced_rule_passed: 45/96 (46.9%) -> 44/96 (45.8%)
+hidden_transfer judge_passed: 22/24 (91.7%) -> 18/24 (75.0%)
+hidden_transfer enhanced_rule_passed: 16/24 (66.7%) -> 18/24 (75.0%)
+enhanced false pass count: 3 -> 8
+```
+
+3 个 patch 节点结果：
+
+```text
+accrual_vs_cash: judge 5/12 -> 1/12; enhanced 1/12 -> 1/12
+net_profit: judge 6/12 -> 6/12; enhanced 2/12 -> 3/12
+gross_margin: judge 7/12 -> 5/12; enhanced 8/12 -> 8/12
+```
+
+结论：
+
+```text
+current conclusion: FAIL
+```
+
+说明：
+
+```text
+after_patch retry_002 是结构有效实验输出，但不能证明 3 个课程 patch 改善课程质量。
+主要风险是 LLM judge 总体通过率下降、hidden_transfer 下降，以及 enhanced-rule false pass 增加。
+当前必须暂停，等待人工审核 comparison_report、stage_report 与 human_review_samples。
+```
+
+### 记录 006
+
+状态：enhanced scorer v3 false-pass 小修已完成，等待人工审核。
+
+触发原因：
+
+```text
+有效 after_patch retry_002 中 enhanced-rule false pass 从 3 增加到 8。
+人工复核发现主要集中在 gross_margin、revenue_recognition、revenue_not_cash_receipt、depreciation_amortization。
+```
+
+修改范围：
+
+```text
+experiments/synthetic_student_lab/common.py
+experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py
+```
+
+修改内容：
+
+```text
+1. 为 8 条 false pass 类型补充回归测试；
+2. 扩展 revenue/cash 与 depreciation/cash 的 contradiction patterns；
+3. 收紧 revenue_recognition、revenue_not_cash_receipt、depreciation_amortization 的过宽语义匹配；
+4. 为 gross_margin 增加公式证据门槛，避免“毛利还不是净利润”类弱答案打满分。
+```
+
+已运行检查：
+
+```bash
+python -m pytest experiments/synthetic_student_lab/tests/test_enhanced_rule_scorer.py -q
+python -m compileall -q app.py pages src tests experiments
+python experiments/synthetic_student_lab/rescore_with_enhanced_rules.py --input-dir experiments/synthetic_student_lab/outputs/ssl_v0_3_real_b_chain_002_after_patch_retry_002_timeout_180
+```
+
+检查结果：
+
+```text
+pytest enhanced scorer: 11 passed, 1 dependency deprecation warning
+compileall: PASS
+rescore sanity_tests_passed: True
+```
+
+v3 rescore 结果：
+
+```text
+enhanced false pass: 8 -> 0
+enhanced false fail: 11 -> 18
+enhanced_rule_passed: 29/96 (30.2%)
+enhanced_rule_score_avg: 0.3906
+```
+
+结论：
+
+```text
+scorer hygiene: PASS
+course validation: still FAIL
+```
+
+说明：
+
+```text
+v3 小修降低了 false pass 风险，但 scorer 变得更保守，false fail 增加。
+当前不应继续自动调 scorer，也不应宣称课程 patch 有效。
+下一步需要人工审核新增 false fail 样本，再决定是否进行更细的 scorer 调整或课程二次 patch。
+```

@@ -30,7 +30,7 @@ student_client:
   api_key_env: SSL_STUDENT_API_KEY
   base_url_env: SSL_STUDENT_BASE_URL
   temperature: 0.2
-  timeout_seconds: 60
+  timeout_seconds: 180
 
 judge_client:
   enabled: true
@@ -39,7 +39,7 @@ judge_client:
   api_key_env: SSL_JUDGE_API_KEY
   base_url_env: SSL_JUDGE_BASE_URL
   temperature: 0.0
-  timeout_seconds: 60
+  timeout_seconds: 180
 
 report:
   max_samples_per_section: 5
